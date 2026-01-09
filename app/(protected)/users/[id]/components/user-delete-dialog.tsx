@@ -3,11 +3,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { RiCheckboxCircleFill, RiErrorWarningFill } from '@remixicon/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { LoaderCircleIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { apiRequest } from '@/lib/api-request';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
+import { apiRequest } from '@/lib/api-request';
 import { Alert, AlertIcon, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,7 +27,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { LoaderCircleIcon } from 'lucide-react';
 import { User } from '@/app/models/user';
 
 // Validation schema for email confirmation
@@ -70,16 +70,14 @@ const UserDeleteDialog = ({
   // Define the mutation for deleting the user
   const mutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest(
-        'DELETE',
-        API_ENDPOINTS.ADMIN_DELETE,
-        { id: user._id || user.id }
-      );
+      const response = await apiRequest('DELETE', API_ENDPOINTS.ADMIN_DELETE, {
+        id: user._id || user.id,
+      });
 
-      if (response.status !== 200 && response.status !== 201) {
-        const message = response.data?.message || 'Failed to delete user';
-        throw new Error(message);
-      }
+      // if (response.status !== 200 && response.status !== 201) {
+      //   const message = response.data?.message || 'Failed to delete user';
+      //   throw new Error(message);
+      // }
 
       return response.data;
     },

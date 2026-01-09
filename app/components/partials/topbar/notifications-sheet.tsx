@@ -1,6 +1,8 @@
 'use client';
 
-import { ReactNode } from 'react';import { toAbsoluteUrl } from '@/lib/helpers';// import Link from 'next/link';
+import { ReactNode } from 'react';
+import { toAbsoluteUrl } from '@/lib/helpers'; // import Link from 'next/link';
+
 // import { Calendar, Settings, Settings2, Shield, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 // import {
@@ -13,7 +15,7 @@ import { Button } from '@/components/ui/button';
 //   DropdownMenuSubTrigger,
 //   DropdownMenuTrigger,
 // } from '@/components/ui/dropdown-menu';
-import { ScrollArea } from '@/components/ui/scroll-area'; 
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Sheet,
   SheetBody,
@@ -23,6 +25,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+
 // import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // import Item1 from './notifications/item-1';
 // import Item2 from './notifications/item-2';
@@ -47,9 +50,7 @@ export function NotificationsSheet({ trigger }: { trigger: ReactNode }) {
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent className="flex flex-col p-0 gap-0 sm:w-[500px] sm:max-w-none inset-5 start-auto h-[calc(100%-2.5rem)] rounded-lg [&_[data-slot=sheet-close]]:top-4.5 [&_[data-slot=sheet-close]]:end-5">
         <SheetHeader className="mb-0">
-          <SheetTitle className="p-3">
-            Notifications
-          </SheetTitle>
+          <SheetTitle className="p-3">Notifications</SheetTitle>
         </SheetHeader>
         <SheetBody className="p-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full w-full">

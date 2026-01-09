@@ -1,13 +1,10 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { I18N_LANGUAGES, Language } from '@/i18n/config';
-import {
-  Globe,
-  Moon,
-  User,
-} from 'lucide-react';
-import { signOut, useSession } from '@/providers/auth-provider';
+import { Globe, Moon, User } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { toAbsoluteUrl } from '@/lib/helpers';
+import { signOut, useAuth, useSession } from '@/providers/auth-provider';
 import { useLanguage } from '@/providers/i18n-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,8 +21,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
-import {useAuth }from '@/providers/auth-provider';
-import { toAbsoluteUrl } from '@/lib/helpers';
 
 export function UserDropdownMenu({ trigger }: { trigger: ReactNode }) {
   const { data: session } = useSession();
@@ -49,7 +44,10 @@ export function UserDropdownMenu({ trigger }: { trigger: ReactNode }) {
           <div className="flex items-center gap-2">
             <img
               className="w-9 h-9 rounded-full border border-border"
-              src={user?.avatar?.fileName || toAbsoluteUrl('/media/avatars/300-1.jpg')}
+              src={
+                user?.avatar?.fileName ||
+                toAbsoluteUrl('/media/avatars/300-1.jpg')
+              }
               alt="User avatar"
             />
             <div className="flex flex-col">
@@ -67,12 +65,10 @@ export function UserDropdownMenu({ trigger }: { trigger: ReactNode }) {
               </p>
             </div>
           </div>
-          
         </div>
 
         <DropdownMenuSeparator />
 
-    
         <DropdownMenuItem asChild>
           <Link
             href="/account/home/user-profile"
@@ -84,7 +80,6 @@ export function UserDropdownMenu({ trigger }: { trigger: ReactNode }) {
         </DropdownMenuItem>
 
         {/* My Account Submenu */}
-        
 
         {/* <DropdownMenuItem asChild>
           <Link
@@ -97,11 +92,8 @@ export function UserDropdownMenu({ trigger }: { trigger: ReactNode }) {
         </DropdownMenuItem> */}
 
         {/* Language Submenu with Radio Group */}
-        
-       
- 
 
-      <DropdownMenuSeparator />
+        <DropdownMenuSeparator />
 
         {/* Footer */}
         <DropdownMenuItem

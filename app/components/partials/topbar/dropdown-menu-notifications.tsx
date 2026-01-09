@@ -127,7 +127,7 @@ export function SheetNotifications({ trigger }: { trigger: ReactNode }) {
             </TabsList>
 
             {/* All Tab */}
-                   </SheetBody>
+        </SheetBody>
         <SheetFooter className="border-t border-gray-100 p-5 grid grid-cols-2 gap-2.5">
           <Button variant="outline" size="sm">
             <Archive className="w-4 h-4" /> Archive all

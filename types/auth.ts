@@ -40,9 +40,8 @@ export interface UpdateModelRequest {
   mobileNumber: string;
   role: string;
   image: any;
-  imageData:ImageData;
+  imageData: ImageData;
 }
-
 
 export interface ChangePasswordDetails {
   currentPassword: string;
@@ -51,9 +50,9 @@ export interface ChangePasswordDetails {
 }
 
 export const changePasswordInitValues: ChangePasswordDetails = {
-  currentPassword: "",
-  newPassword: "",
-  confirmPassword: "",
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
 };
 
 export interface ImageData {
@@ -64,7 +63,6 @@ export interface ImageData {
   mimeType: string;
 }
 
-
 export interface UpdateModel {
   firstName: string;
   newIsdCode: string;
@@ -74,13 +72,13 @@ export interface UpdateModel {
   countryId: string;
   isdCode: string;
   mobileNumber: string;
-  image: any,
-   imageData:ImageData
+  image: any;
+  imageData: ImageData;
 }
 export interface Country {
   _id: string;
   alpha2: string;
   name: string;
   isdCode: string;
-  flag: string; 
+  flag: string;
 }

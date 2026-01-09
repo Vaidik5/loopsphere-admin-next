@@ -11,13 +11,12 @@ export const API_ENDPOINTS = {
   ADMIN_ADD: `${API_URL}/admin/add`,
   ADMIN_EDIT: `${API_URL}/admin/edit`,
   ADMIN_DELETE: `${API_URL}/admin/delete`,
-  
+
   GET_ALL_COUNTRY: `${API_URL}/location/countries/list`,
   UPDATE_PROFILE: `${API_URL}/admin/profileUpdate`,
 
   CLIENT_ACTIVE: `${API_URL}/client/getActive`,
   BUSINESS_BY_CLIENT: `${API_URL}/business/getByClientForDropdown`,
-
 
   //======================CATEGORY APIS =====================
   CATEGORY_LIST: `${API_URL}/category/list`,
@@ -38,7 +37,6 @@ export const API_ENDPOINTS = {
   //======================WATERMARK APIS =====================
   ADD_WATERMARK_SETTINGS: `${API_URL}/general-settings/add-or-edit`,
   VIEW_WATERMARK_SETTINGS: `${API_URL}/general-settings/view`,
-
 
   //======================BUSINESS-ICON APIS =====================
   BUSINESS_ICON_ADD: `${API_URL}/business-icon/add`,

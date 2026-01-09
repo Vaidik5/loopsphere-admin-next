@@ -50,8 +50,6 @@ export function MegaMenu() {
             </Link>
           </NavigationMenuLink>
         </NavigationMenuItem>
-
-       
       </NavigationMenuList>
     </NavigationMenu>
   );

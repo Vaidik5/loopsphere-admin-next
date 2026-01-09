@@ -79,7 +79,8 @@ export function SearchDialog({ trigger }: { trigger: ReactNode }) {
         { filename: '300-2.png', variant: 'size-6' },
         {
           fallback: '+3',
-          variant: 'text-white rounded-full size-6 ring-background bg-green-500',
+          variant:
+            'text-white rounded-full size-6 ring-background bg-green-500',
         },
       ],
     },
@@ -91,7 +92,6 @@ export function SearchDialog({ trigger }: { trigger: ReactNode }) {
         { filename: '300-14.png', variant: 'size-6' },
         { filename: '300-12.png', variant: 'size-6' },
         { filename: '300-9.png', variant: 'size-6' },
-
       ],
     },
   ];

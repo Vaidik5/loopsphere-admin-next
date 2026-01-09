@@ -1,16 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-// Add this import at the top of the file
-import { useAuth } from '@/providers/auth-provider';
-
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { RiErrorWarningFill } from '@remixicon/react';
-import { AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { signIn } from '@/providers/auth-provider';
+import { AlertCircle, Eye, EyeOff, LoaderCircleIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+// Add this import at the top of the file
+import { signIn, useAuth } from '@/providers/auth-provider';
 import { Alert, AlertIcon, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -23,14 +21,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { LoaderCircleIcon } from 'lucide-react';
 import { Icons } from '@/components/common/icons';
 import { getSigninSchema, SigninSchemaType } from '../forms/signin-schema';
 
 export default function Page() {
   const { login, user, isLoading } = useAuth();
   const router = useRouter();
-  
+
   useEffect(() => {
     if (!isLoading && user) {
       router.push('/');
@@ -51,29 +48,29 @@ export default function Page() {
   });
 
   // Find the onSubmit function and replace it with this:
-async function onSubmit(values: SigninSchemaType) {
-  setIsProcessing(true);
-  setError(null);
+  async function onSubmit(values: SigninSchemaType) {
+    setIsProcessing(true);
+    setError(null);
 
-  try {
-    // Use your custom auth instead of NextAuth
-    const success = await login(values.email, values.password);
+    try {
+      // Use your custom auth instead of NextAuth
+      const success = await login(values.email, values.password);
 
-    if (success) {
-      router.push('/');
-    } else {
-      setError('Invalid credentials. Please try again.');
+      if (success) {
+        router.push('/');
+      } else {
+        setError('Invalid credentials. Please try again.');
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'An unexpected error occurred. Please try again.',
+      );
+    } finally {
+      setIsProcessing(false);
     }
-  } catch (err) {
-    setError(
-      err instanceof Error
-        ? err.message
-        : 'An unexpected error occurred. Please try again.',
-    );
-  } finally {
-    setIsProcessing(false);
   }
-}
 
   if (isLoading) {
     return (
@@ -91,18 +88,11 @@ async function onSubmit(values: SigninSchemaType) {
       >
         <div className="space-y-1.5 pb-3">
           <h1 className="text-2xl font-semibold tracking-tight text-center">
-           LoopSphere Admin
+            LoopSphere Admin
           </h1>
         </div>
 
-    
-
-
-
-        <div className="relative py-1.5">
-         
-      
-        </div>
+        <div className="relative py-1.5"></div>
 
         {error && (
           <Alert variant="destructive">
@@ -194,12 +184,12 @@ async function onSubmit(values: SigninSchemaType) {
 
         <div className="flex flex-col gap-2.5">
           <Button type="submit" disabled={isProcessing}>
-            {isProcessing ? <LoaderCircleIcon className="size-4 animate-spin w-full h-full z-10" /> : null}
+            {isProcessing ? (
+              <LoaderCircleIcon className="size-4 animate-spin w-full h-full z-10" />
+            ) : null}
             Continue
           </Button>
         </div>
-
-        
       </form>
     </Form>
   );

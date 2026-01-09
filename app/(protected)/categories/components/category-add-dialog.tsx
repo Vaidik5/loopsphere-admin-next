@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { RiCheckboxCircleFill, RiErrorWarningFill } from '@remixicon/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { LoaderCircleIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api';
@@ -34,7 +35,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { LoaderCircleIcon } from 'lucide-react';
 // import { UserRole } from '@/app/models/user';
 // import { useRoleSelectQuery } from '@/roles/hooks/use-role-select-query';
 import { UserAddSchema, UserAddSchemaType } from '../forms/category-add-schema';
@@ -49,7 +49,7 @@ const UserAddDialog = ({
   const queryClient = useQueryClient();
 
   // Fetch available roles
-//   const { data: roleList } = useRoleSelectQuery();
+  //   const { data: roleList } = useRoleSelectQuery();
 
   const form = useForm<UserAddSchemaType>({
     resolver: zodResolver(UserAddSchema),

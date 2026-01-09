@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
-import * as authHelper from './auth-helpers';
 import { AuthModel } from '@/types/auth'; // Ensure this path matches where you put AuthModel
 import { API_ENDPOINTS } from './api-endpoints';
+import * as authHelper from './auth-helpers';
 
 // Common API request function
 export const apiRequest = async <T>(
@@ -9,22 +9,21 @@ export const apiRequest = async <T>(
   url: string,
   data?: any,
   contentType: 'application/json' | 'multipart/form-data' = 'application/json',
-  config: AxiosRequestConfig = {}
+  config: AxiosRequestConfig = {},
 ): Promise<AxiosResponse<T>> => {
-
   const tokenInfo = authHelper.getAuth();
-  
+
   // Logic to extract token - supporting both patterns seen in source
   const accessToken = tokenInfo?.data?.accessToken || tokenInfo?.access_token;
 
-  // We only throw if we absolutely need auth and don't have it? 
+  // We only throw if we absolutely need auth and don't have it?
   // The original code throws immediately. Checks specific endpoints? No, it just throws.
   // Assuming this helper is only for protected routes.
-  
+
   // Note: For login/register we might call axios directly or handle the "no token" case.
   // But strictly following the source, it checks generic presence.
   // HOWEVER, for login, we don't have a token yet. The source uses axios directly for login.
-  
+
   const headers: Record<string, any> = {
     ...config.headers,
   };
@@ -49,25 +48,29 @@ export const apiRequest = async <T>(
 
     return response;
   } catch (error: any) {
-    console.error('apiRequest error:', error.response || error.message || error);
+    console.error(
+      'apiRequest error:',
+      error.response || error.message || error,
+    );
     if (error.response?.status === 401) {
       try {
         const newAuth = await refreshAccessToken();
-        const newAccessToken = newAuth?.data?.accessToken || newAuth?.access_token;
-        
+        const newAccessToken =
+          newAuth?.data?.accessToken || newAuth?.access_token;
+
         if (newAccessToken) {
-           headers.Authorization = `Bearer ${newAccessToken}`;
-           if (contentType === 'application/json') {
-             headers['Content-Type'] = 'application/json';
-           }
-           const retryResponse = await axios({
-             method,
-             url,
-             data,
-             headers,
-             ...config,
-           });
-           return retryResponse;
+          headers.Authorization = `Bearer ${newAccessToken}`;
+          if (contentType === 'application/json') {
+            headers['Content-Type'] = 'application/json';
+          }
+          const retryResponse = await axios({
+            method,
+            url,
+            data,
+            headers,
+            ...config,
+          });
+          return retryResponse;
         }
       } catch (refreshError) {
         // If refresh fails, we might want to logout
@@ -88,10 +91,13 @@ export const refreshAccessToken = async (): Promise<AuthModel> => {
   }
 
   try {
-    const response = await axios.post<AuthModel>(API_ENDPOINTS.ADMIN_REFRESH_TOKEN, {
-      refreshToken: refreshToken,
-      identifier: 'device-uuid',
-    });
+    const response = await axios.post<AuthModel>(
+      API_ENDPOINTS.ADMIN_REFRESH_TOKEN,
+      {
+        refreshToken: refreshToken,
+        identifier: 'device-uuid',
+      },
+    );
     authHelper.setAuth(response.data);
     return response.data;
   } catch (error) {

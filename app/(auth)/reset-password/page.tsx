@@ -3,7 +3,7 @@
 import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertCircle, ArrowLeft, Check } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Check, LoaderCircleIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { apiFetch } from '@/lib/api';
@@ -18,8 +18,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { LoaderCircleIcon } from 'lucide-react';
-
 
 export default function Page() {
   const [error, setError] = useState<string | null>(null);
@@ -134,17 +132,16 @@ export default function Page() {
             )}
           />
 
-  
-
-
-           <Button
-                type="submit"
-                disabled={!!success || isProcessing}
-                className="w-full"
-              >
-                {isProcessing ? <LoaderCircleIcon className="animate-spin" /> : null}
-                Submit
-              </Button>
+          <Button
+            type="submit"
+            disabled={!!success || isProcessing}
+            className="w-full"
+          >
+            {isProcessing ? (
+              <LoaderCircleIcon className="animate-spin" />
+            ) : null}
+            Submit
+          </Button>
 
           <div className="space-y-3">
             <Button type="button" variant="outline" className="w-full" asChild>

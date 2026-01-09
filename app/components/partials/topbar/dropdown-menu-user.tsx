@@ -8,12 +8,12 @@ import {
   FileText,
   Moon,
   Settings,
-  Shield,  
+  Shield,
   Users,
 } from 'lucide-react';
-import { signOut, useSession } from '@/providers/auth-provider';
 import { useTheme } from 'next-themes';
 import { toAbsoluteUrl } from '@/lib/helpers';
+import { signOut, useAuth, useSession } from '@/providers/auth-provider';
 import { useLanguage } from '@/providers/i18n-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,14 +28,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
-import {useAuth} from '@/providers/auth-provider';
 
 export function DropdownMenuUser({ trigger }: { trigger: ReactNode }) {
   const { data: session } = useSession();
 
   const { theme, setTheme } = useTheme();
-const { user } = useAuth();
- 
+  const { user } = useAuth();
 
   const handleThemeToggle = (checked: boolean) => {
     setTheme(checked ? 'dark' : 'light');
@@ -50,7 +48,10 @@ const { user } = useAuth();
           <div className="flex items-center gap-2">
             <img
               className="w-9 h-9 rounded-full border border-border"
-              src={user?.avatar?.fileName || toAbsoluteUrl('/media/avatars/300-1.jpg')}
+              src={
+                user?.avatar?.fileName ||
+                toAbsoluteUrl('/media/avatars/300-1.jpg')
+              }
               alt="User avatar"
             />
             <div className="flex flex-col">
@@ -68,12 +69,9 @@ const { user } = useAuth();
               </Link>
             </div>
           </div>
-      
         </div>
 
         <DropdownMenuSeparator />
-
-       
 
         {/* My Account Submenu */}
         <DropdownMenuSub>
@@ -150,7 +148,7 @@ const { user } = useAuth();
         </DropdownMenuItem>
 
         {/* Language Submenu with Radio Group */}
-        
+
         <DropdownMenuSeparator />
 
         {/* Footer */}

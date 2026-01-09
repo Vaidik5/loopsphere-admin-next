@@ -15,7 +15,7 @@ export function BrandedLayout({ children }: { children: ReactNode }) {
       }
       style={
         shouldShowBackground
-          ? { backgroundImage: "url(/img/signinImg.webp)" }
+          ? { backgroundImage: 'url(/img/signinImg.webp)' }
           : undefined
       }
     >

@@ -10,8 +10,12 @@ export interface User {
   image?: string | { fileName: string }; // From API
   mobileNumber?: string;
   isdCode?: string;
-  role?: string | { id: string; name: string; isProtected?: boolean; [key: string]: any };
-  status?: string | { code: 'active' | 'inactive' | 'pending' | 'deleted'; label: string };
+  role?:
+    | string
+    | { id: string; name: string; isProtected?: boolean; [key: string]: any };
+  status?:
+    | string
+    | { code: 'active' | 'inactive' | 'pending' | 'deleted'; label: string };
   createdAt?: string; // Optional if not present
   lastSignInAt?: string; // Optional if not present
   emailVerifiedAt?: string;
@@ -31,5 +35,5 @@ export const MOCK_USER: User = {
   name: 'Demo User',
   avatar: '/media/avatars/300-2.png',
   role: 'admin',
-  status: 'active'
+  status: 'active',
 };

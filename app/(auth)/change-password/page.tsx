@@ -1,9 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertCircle, Check, Eye, EyeOff } from 'lucide-react';
+import {
+  AlertCircle,
+  Check,
+  Eye,
+  EyeOff,
+  LoaderCircleIcon,
+} from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { apiFetch } from '@/lib/api';
 import { Alert, AlertIcon, AlertTitle } from '@/components/ui/alert';
@@ -17,12 +24,10 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { LoaderCircleIcon } from 'lucide-react';
 import {
   ChangePasswordSchemaType,
   getChangePasswordSchema,
 } from '../forms/change-password-schema';
-import Link from 'next/link';
 
 export default function Page() {
   const router = useRouter();
@@ -233,7 +238,9 @@ export default function Page() {
             />
 
             <Button type="submit" disabled={isProcessing} className="w-full">
-              {isProcessing && <LoaderCircleIcon className="size-4 animate-spin" />}
+              {isProcessing && (
+                <LoaderCircleIcon className="size-4 animate-spin" />
+              )}
               Reset Password
             </Button>
           </>

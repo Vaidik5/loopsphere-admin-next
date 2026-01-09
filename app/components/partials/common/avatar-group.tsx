@@ -30,7 +30,10 @@ function AvatarGroup({ size, group, more, className }: AvatarGroupProp) {
           <AvatarImage
             src={toAbsoluteUrl(each.path || `/media/avatars/${each.filename}`)}
             alt="image"
-            className={cn(' border-1 border-background hover:z-10',  each.variant)}
+            className={cn(
+              ' border-1 border-background hover:z-10',
+              each.variant,
+            )}
           />
         ) : null}
         {each.fallback ? (

@@ -20,6 +20,7 @@ import { toAbsoluteUrl } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useScrollPosition } from '@/hooks/use-scroll-position';
+import { useAuth } from '@/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -28,7 +29,6 @@ import {
   SheetHeader,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { useAuth } from '@/providers/auth-provider';
 import { Container } from '@/components/common/container';
 // import { StoreClientTopbar } from '@/app/(protected)/store-client/components/common/topbar';
 import { Breadcrumb } from './breadcrumb';
@@ -39,7 +39,7 @@ import { SidebarMenu } from './sidebar-menu';
 export function Header() {
   const [isSidebarSheetOpen, setIsSidebarSheetOpen] = useState(false);
   const [isMegaMenuSheetOpen, setIsMegaMenuSheetOpen] = useState(false);
-const {user} = useAuth();
+  const { user } = useAuth();
   const pathname = usePathname();
   const mobileMode = useIsMobile();
 
@@ -51,7 +51,7 @@ const {user} = useAuth();
     setIsSidebarSheetOpen(false);
     setIsMegaMenuSheetOpen(false);
     console.log('User in Header:', user);
-  }, [pathname,user]);
+  }, [pathname, user]);
 
   return (
     <header
@@ -129,11 +129,9 @@ const {user} = useAuth();
         <div className="flex items-center gap-3">
           {pathname.startsWith('/store-client') ? (
             // <StoreClientTopbar />
-            <>
-            </>
+            <></>
           ) : (
             <>
-             
               <NotificationsSheet
                 trigger={
                   <Button
@@ -146,13 +144,15 @@ const {user} = useAuth();
                   </Button>
                 }
               />
-            
-             
+
               <UserDropdownMenu
                 trigger={
                   <img
                     className="size-9 rounded-full border-2 border-green-500 shrink-0 cursor-pointer"
-                    src={user?.avatar?.fileName || toAbsoluteUrl('/media/avatars/300-1.jpg')}
+                    src={
+                      user?.avatar?.fileName ||
+                      toAbsoluteUrl('/media/avatars/300-1.jpg')
+                    }
                     alt="User Avatar"
                   />
                 }

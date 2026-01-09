@@ -2,9 +2,9 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { LoaderCircleIcon } from 'lucide-react';
 import { useAuth } from '@/providers/auth-provider';
 import { Demo1Layout } from '../components/layouts/layout';
-import { LoaderCircleIcon } from 'lucide-react';
 
 export default function ProtectedLayout({
   children,

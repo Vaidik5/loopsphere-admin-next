@@ -20,20 +20,12 @@ export function Demo1LightSidebarContent() {
         </div>
       </div>
       <div className="grid lg:grid-cols-3 gap-5 lg:gap-7.5 items-stretch">
-        <div className="lg:col-span-1">
-         
-        </div>
-        <div className="lg:col-span-2">
-         
-        </div>
+        <div className="lg:col-span-1"></div>
+        <div className="lg:col-span-2"></div>
       </div>
       <div className="grid lg:grid-cols-3 gap-5 lg:gap-7.5 items-stretch">
-        <div className="lg:col-span-1">
-          {/* <TeamMeeting /> */}
-        </div>
-        <div className="lg:col-span-2">
-          {/* <Teams /> */}
-        </div>
+        <div className="lg:col-span-1">{/* <TeamMeeting /> */}</div>
+        <div className="lg:col-span-2">{/* <Teams /> */}</div>
       </div>
     </div>
   );

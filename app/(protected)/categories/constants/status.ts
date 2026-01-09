@@ -18,6 +18,6 @@ export const UserStatusProps = {
 
 // Function to get status properties
 export const getUserStatusProps = (status: UserStatus) => {
-  // return 
-  return{}
+  // return
+  return {};
 };

@@ -13,8 +13,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { ChevronRight, Plus, Search, X } from 'lucide-react';
-import { apiRequest } from '@/lib/api-request';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
+import { apiRequest } from '@/lib/api-request';
 import { getInitials } from '@/lib/helpers';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge, BadgeDot, BadgeProps } from '@/components/ui/badge';
@@ -101,7 +101,7 @@ const UserList = () => {
     // The API returns _id.
     const userId = row._id || row.id;
     if (userId) {
-       redirect(`/user-management/users/${userId}`);
+      redirect(`/user-management/users/${userId}`);
     }
   };
 
@@ -121,24 +121,27 @@ const UserList = () => {
           const user = row.original;
           const firstName = user.firstName || '';
           const lastName = user.lastName || '';
-          const fullName = `${firstName.charAt(0).toUpperCase() + firstName.slice(1)} ${lastName.charAt(0).toUpperCase() + lastName.slice(1)}`.trim();
+          const fullName =
+            `${firstName.charAt(0).toUpperCase() + firstName.slice(1)} ${lastName.charAt(0).toUpperCase() + lastName.slice(1)}`.trim();
           const displayName = fullName || user.name || 'User';
-          
+
           let avatarUrl = user.avatar || null;
-          if (user.image && typeof user.image === 'object' && user.image.fileName) {
-             avatarUrl = user.image.fileName;
+          if (
+            user.image &&
+            typeof user.image === 'object' &&
+            user.image.fileName
+          ) {
+            avatarUrl = user.image.fileName;
           } else if (typeof user.image === 'string') {
-             avatarUrl = user.image;
+            avatarUrl = user.image;
           }
-          
+
           const initials = getInitials(displayName);
 
           return (
             <div className="flex items-center gap-3">
               <Avatar className="size-8">
-                {avatarUrl && (
-                  <AvatarImage src={avatarUrl} alt={displayName} />
-                )}
+                {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <div className="font-medium text-sm">{displayName}</div>
@@ -171,17 +174,15 @@ const UserList = () => {
           />
         ),
         cell: ({ row }) => {
-            return (
-                <div className="text-sm">{row.original.email}</div>
-            );
+          return <div className="text-sm">{row.original.email}</div>;
         },
         size: 250,
         meta: {
-            headerTitle: 'Email',
-            skeleton: <Skeleton className="w-28 h-7" />,
+          headerTitle: 'Email',
+          skeleton: <Skeleton className="w-28 h-7" />,
         },
         enableSorting: true,
-        enableHiding: true, 
+        enableHiding: true,
       },
       {
         accessorKey: 'mobileNumber',
@@ -194,17 +195,22 @@ const UserList = () => {
           />
         ),
         cell: ({ row }) => {
-            const user = row.original;
-            const isd = user.isdCode ? `(+${user.isdCode.replace(/^\+/, '')}) ` : '';
-            const mobile = user.mobileNumber || '';
-            return (
-                <div className="text-sm">{isd}{mobile}</div>
-            );
+          const user = row.original;
+          const isd = user.isdCode
+            ? `(+${user.isdCode.replace(/^\+/, '')}) `
+            : '';
+          const mobile = user.mobileNumber || '';
+          return (
+            <div className="text-sm">
+              {isd}
+              {mobile}
+            </div>
+          );
         },
         size: 200,
         meta: {
-            headerTitle: 'Mobile Number',
-            skeleton: <Skeleton className="w-28 h-7" />,
+          headerTitle: 'Mobile Number',
+          skeleton: <Skeleton className="w-28 h-7" />,
         },
         enableSorting: true,
         enableHiding: true,
@@ -224,29 +230,32 @@ const UserList = () => {
           // Handle status as object or string
           let statusCode = 'default';
           let statusLabel = '-';
-          
+
           if (typeof user.status === 'object' && user.status) {
-             statusCode = user.status.code;
-             statusLabel = user.status.label || user.status.code;
+            statusCode = user.status.code;
+            statusLabel = user.status.label || user.status.code;
           } else if (typeof user.status === 'string') {
-             statusCode = user.status;
-             statusLabel = user.status;
+            statusCode = user.status;
+            statusLabel = user.status;
           }
 
-          const statusColorMap: Record<string, NonNullable<BadgeProps['variant']>> = {
+          const statusColorMap: Record<
+            string,
+            NonNullable<BadgeProps['variant']>
+          > = {
             active: 'success',
             inactive: 'destructive',
             pending: 'warning',
             deleted: 'destructive',
-            default: 'secondary'
+            default: 'secondary',
           };
 
           const variant = statusColorMap[statusCode] || 'secondary';
 
           return (
             <Badge variant={variant} appearance="ghost">
-                <BadgeDot />
-                {statusLabel}
+              <BadgeDot />
+              {statusLabel}
             </Badge>
           );
         },

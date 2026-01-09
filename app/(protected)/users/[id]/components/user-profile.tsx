@@ -13,21 +13,21 @@ import UserProfileEditDialog from './user-profile-edit-dialog';
 const getUserStatusProps = (status: any) => {
   let code = 'default';
   let label = 'Unknown';
-  
+
   if (typeof status === 'string') {
-      code = status;
-      label = status;
+    code = status;
+    label = status;
   } else if (status && typeof status === 'object') {
-      code = status.code || 'default';
-      label = status.label || code;
+    code = status.code || 'default';
+    label = status.label || code;
   }
-  
+
   const map: any = {
     active: { variant: 'success', label: 'Active' },
     inactive: { variant: 'destructive', label: 'Inactive' }, // changed danger to destructive for shadcn usually
-    pending: { variant: 'warning', label: 'Pending' }
+    pending: { variant: 'warning', label: 'Pending' },
   };
-  
+
   return map[code] || { variant: 'secondary', label: label };
 };
 
@@ -129,10 +129,13 @@ const UserProfile = ({
               <dt>Role:</dt>
               <dd>
                 <span className="inline-flex items-center gap-1">
-                  {typeof user.role === 'object' ? (user.role as any).name : user.role}
-                  {typeof user.role === 'object' && (user.role as any).isProtected && (
-                    <Badge variant="outline">System</Badge>
-                  )}
+                  {typeof user.role === 'object'
+                    ? (user.role as any).name
+                    : user.role}
+                  {typeof user.role === 'object' &&
+                    (user.role as any).isProtected && (
+                      <Badge variant="outline">System</Badge>
+                    )}
                 </span>
               </dd>
             </div>

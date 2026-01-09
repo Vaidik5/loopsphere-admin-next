@@ -1,16 +1,10 @@
 import {
-
   File as DocumentIcon,
-  
   LayoutGrid,
- 
   Users as PeopleIcon,
- 
   Shield,
   ShieldUser,
-  
   Briefcase as WorIcon,
-
 } from 'lucide-react';
 import { type MenuConfig } from './types';
 
@@ -24,12 +18,8 @@ export const MENU_SIDEBAR: MenuConfig = [
     title: 'Users',
     path: '/users',
     icon: ShieldUser,
-    
   },
-  
- 
-
- ];
+];
 
 export const MENU_SIDEBAR_CUSTOM: MenuConfig = [
   {
@@ -45,7 +35,7 @@ export const MENU_SIDEBAR_CUSTOM: MenuConfig = [
         title: 'Sign In',
         path: '/signin',
       },
- 
+
       {
         title: 'Verify Email',
         path: '/verify-email',
@@ -54,16 +44,14 @@ export const MENU_SIDEBAR_CUSTOM: MenuConfig = [
         title: 'Reset Password',
         path: '/reset-password',
       },
-   
+
       { title: 'Account Deactivated', path: '/auth/account-deactivated' },
-      
     ],
   },
- 
 ];
 
 export const MENU_SIDEBAR_COMPACT: MenuConfig = [
-   {
+  {
     title: 'Dashboards',
     icon: LayoutGrid,
     path: '/',
@@ -76,7 +64,7 @@ export const MENU_SIDEBAR_COMPACT: MenuConfig = [
         title: 'Sign In',
         path: '/signin',
       },
-    
+
       {
         title: 'Verify Email',
         path: '/verify-email',
@@ -85,13 +73,13 @@ export const MENU_SIDEBAR_COMPACT: MenuConfig = [
         title: 'Reset Password',
         path: '/reset-password',
       },
-   
+
       { title: 'Account Deactivated', path: '/auth/account-deactivated' },
       { title: 'Error 404', path: '/error/404' },
       { title: 'Error 500', path: '/error/500' },
     ],
   },
- 
+
   {
     title: 'User Management',
     icon: ShieldUser,
@@ -100,21 +88,12 @@ export const MENU_SIDEBAR_COMPACT: MenuConfig = [
         title: 'Users',
         path: '/user-management/users',
       },
-     
     ],
   },
 ];
 
-export const MENU_MEGA: MenuConfig = [
-  { title: 'Home', path: '/' },
-   
-];
+export const MENU_MEGA: MenuConfig = [{ title: 'Home', path: '/' }];
 
-export const MENU_MEGA_MOBILE: MenuConfig = [
-  { title: 'Home', path: '/' },
- 
-];
+export const MENU_MEGA_MOBILE: MenuConfig = [{ title: 'Home', path: '/' }];
 
-export const MENU_HELP: MenuConfig = [
-
-];
+export const MENU_HELP: MenuConfig = [];
