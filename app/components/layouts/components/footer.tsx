@@ -1,6 +1,6 @@
 'use client';
 
-import { generalSettings } from '@/config/general.config';
+// import { generalSettings } from '@/config/general.config';
 import { Container } from '@/components/common/container';
 
 export function Footer() {
@@ -21,7 +21,7 @@ export function Footer() {
             </a>
           </div>
           <nav className="flex order-1 md:order-2 gap-4 font-normal text-sm text-muted-foreground">
-            <a
+            {/* <a
               href={generalSettings.docsLink}
               target="_blank"
               className="hover:text-primary"
@@ -55,7 +55,7 @@ export function Footer() {
               className="hover:text-primary"
             >
               License
-            </a>
+            </a> */}
           </nav>
         </div>
       </Container>

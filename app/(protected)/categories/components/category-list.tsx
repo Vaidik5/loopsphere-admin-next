@@ -205,7 +205,7 @@ const UserList = () => {
           const role = row.original.role || [];
           if (!role) return '-';
 
-          return <Badge variant="secondary">{role.name}</Badge>;
+          return {};
         },
         meta: {
           headerTitle: 'Role',
@@ -229,14 +229,14 @@ const UserList = () => {
             row.original.status as UserStatus,
           );
           const isTrashed = row.original.isTrashed;
-          const variant = statusProps.variant as keyof BadgeProps['variant'];
+          // const variant = statusProps.variant as keyof BadgeProps['variant'];
 
           return (
             <div className="inline-flex gap-2.5">
-              <Badge variant={variant} appearance="ghost">
+              {/* <Badge variant={variant} appearance="ghost">
                 <BadgeDot />
                 {statusProps.label}
-              </Badge>
+              </Badge> */}
               {isTrashed && (
                 <Badge variant="destructive" appearance="light">
                   Trashed
@@ -399,11 +399,11 @@ const UserList = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All users</SelectItem>
-              {Object.entries(UserStatusProps).map(([status, { label }]) => (
+              {/* {Object.entries(UserStatusProps).map(([status, { label }]) => (
                 <SelectItem key={status} value={status}>
                   {label}
                 </SelectItem>
-              ))}
+              ))} */}
             </SelectContent>
           </Select>
         </div>

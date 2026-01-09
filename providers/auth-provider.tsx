@@ -3,13 +3,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as authApi from '@/lib/auth-api';
 import * as authHelper from '@/lib/auth-helpers';
-import { UserModel } from '@/types/auth'; // Ensure path
+import { UserModel, UserImage } from '@/types/auth'; // Ensure path
+import { useRouter } from 'next/router';
 
 interface User {
   id: string;
   email: string;
   name: string;
-  avatar?: string;
+  avatar?: UserImage|null;
   role?: string;
 }
 
@@ -30,7 +31,7 @@ const mapUser = (apiUser: UserModel): User => {
     id: apiUser._id,
     email: apiUser.email,
     name: `${apiUser.firstName || ''} ${apiUser.lastName || ''}`.trim(),
-    avatar: apiUser.image,
+    avatar: apiUser.image || null,
     role: apiUser.role
   };
 };
@@ -38,6 +39,7 @@ const mapUser = (apiUser: UserModel): User => {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
 
   useEffect(() => {
     const initAuth = async () => {
@@ -122,17 +124,16 @@ export async function signIn(provider: string, options?: Record<string, unknown>
     // This will be handled by your login form
     return { error: null };
   }
-  if (provider === 'google') {
-    // Mock Google sign in - replace with your implementation
-    console.log('Google sign in clicked - implement your Google auth here');
-    return { error: null };
-  }
+
   return { error: 'Provider not supported' };
 }
 
 // Mock signOut function for compatibility
 export function signOut() {
   // For compatibility, we'll handle logout through the context directly
+
   authHelper.removeAuth();
-  window.location.reload(); // Force a reload to update the auth state
+  window.location.reload(); 
+  
+  // Force a reload to update the auth state
 }

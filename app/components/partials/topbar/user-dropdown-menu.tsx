@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import {useAuth }from '@/providers/auth-provider';
+import { toAbsoluteUrl } from '@/lib/helpers';
 
 export function UserDropdownMenu({ trigger }: { trigger: ReactNode }) {
   const { data: session } = useSession();
@@ -48,7 +49,7 @@ export function UserDropdownMenu({ trigger }: { trigger: ReactNode }) {
           <div className="flex items-center gap-2">
             <img
               className="w-9 h-9 rounded-full border border-border"
-              src={user?.avatar.fileName || toAbsoluteUrl('/media/avatars/300-1.jpg')}
+              src={user?.avatar?.fileName || toAbsoluteUrl('/media/avatars/300-1.jpg')}
               alt="User avatar"
             />
             <div className="flex flex-col">

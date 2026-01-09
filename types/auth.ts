@@ -11,13 +11,21 @@ export interface AuthModel {
   api_token: string;
 }
 
+export interface UserImage {
+  fileName: string;
+  width: number;
+  height: number;
+  aspectRatio: string;
+  mimeType: string;
+}
+
 export interface UserModel {
   _id: string;
   firstName: string;
   lastName: string;
   email: string;
   role: string;
-  image?: string;
+  image?: UserImage;
   // Add other user fields as necessary based on the API response
 }
 

@@ -6,12 +6,9 @@ import {
   Coffee,
   CreditCard,
   FileText,
-  Globe,
   Moon,
   Settings,
-  Shield,
-  User,
-  UserCircle,
+  Shield,  
   Users,
 } from 'lucide-react';
 import { signOut, useSession } from '@/providers/auth-provider';
@@ -24,8 +21,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
@@ -33,11 +28,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
-import useAuth from '@/providers/auth-provider';
+import {useAuth} from '@/providers/auth-provider';
 
 export function DropdownMenuUser({ trigger }: { trigger: ReactNode }) {
   const { data: session } = useSession();
-  const { changeLanguage, language } = useLanguage();
+
   const { theme, setTheme } = useTheme();
 const { user } = useAuth();
  
@@ -55,7 +50,7 @@ const { user } = useAuth();
           <div className="flex items-center gap-2">
             <img
               className="w-9 h-9 rounded-full border border-border"
-              src={user?.avatar.fileName || toAbsoluteUrl('/media/avatars/300-1.jpg')}
+              src={user?.avatar?.fileName || toAbsoluteUrl('/media/avatars/300-1.jpg')}
               alt="User avatar"
             />
             <div className="flex flex-col">
@@ -73,26 +68,12 @@ const { user } = useAuth();
               </Link>
             </div>
           </div>
-          {/* <Badge variant="primary" appearance="light" size="sm">
-            Pro
-          </Badge> */}
+      
         </div>
 
         <DropdownMenuSeparator />
 
-        {/* Menu Items */}
-        {/* <DropdownMenuItem asChild>
        
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link
-            href="/account/home/user-profile"
-            className="flex items-center gap-2"
-          >
-            <User />
-            My Profile
-          </Link>
-        </DropdownMenuItem> */}
 
         {/* My Account Submenu */}
         <DropdownMenuSub>
