@@ -71,7 +71,7 @@ const UserRestoreDialog = ({
     mutationFn: async () => {
       // Call the restore endpoint (adjust the endpoint/method as needed)
       const response = await apiFetch(
-        `/api/user-management/users/${user.id}/restore`,
+        `/api/users/${user.id}/restore`,
         {
           method: 'PATCH',
         },

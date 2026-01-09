@@ -69,7 +69,7 @@ const UserAddDialog = ({
 
   const mutation = useMutation({
     mutationFn: async (values: UserAddSchemaType) => {
-      const response = await apiFetch('/api/user-management/users', {
+      const response = await apiFetch('/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

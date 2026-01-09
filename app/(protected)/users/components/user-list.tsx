@@ -57,7 +57,7 @@ const UserList = () => {
 
     const response = await apiRequest<any>(
       'GET',
-      `${API_ENDPOINTS.ADMIN_LIST}?${params.toString()}`,
+      `${API_ENDPOINTS.GET_ALL_ADMIN_USERS_LIST}?${params.toString()}`,
     );
 
     if (response.status !== 200) {
@@ -101,7 +101,7 @@ const UserList = () => {
     // The API returns _id.
     const userId = row._id || row.id;
     if (userId) {
-      redirect(`/user-management/users/${userId}`);
+      redirect(`/users/${userId}`);
     }
   };
 

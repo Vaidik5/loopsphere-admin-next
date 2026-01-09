@@ -56,12 +56,12 @@ export default function UserLayout({
       general: {
         title: 'Profile',
         icon: UserPen,
-        path: `/user-management/users/${id}`,
+        path: `/users/${id}`,
       },
       logs: {
         title: 'Activity Logs',
         icon: Activity,
-        path: `/user-management/users/${id}/logs`,
+        path: `/users/${id}/logs`,
       },
     }),
     [id],
@@ -84,9 +84,7 @@ export default function UserLayout({
     queryFn: async () => {
       const response = await apiFetch(`/api/user-management/users/${id}`);
 
-      if (response.status == 404) {
-        router.push('/user-management/users');
-      }
+    
 
       if (!response.ok) {
         const { message } = await response.json();

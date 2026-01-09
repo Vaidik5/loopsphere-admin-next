@@ -27,6 +27,61 @@ export async function apiFetch(
   return fetch(url as RequestInfo, init);
 }
 
+// export const apiRequest = async <T>(
+//   method: Method,
+//   url: string,
+//   data?: any,
+//   contentType: 'application/json' | 'multipart/form-data' = 'application/json',
+//   config: AxiosRequestConfig = {}
+// ): Promise<AxiosResponse<T>> => {
+
+//   const token = authHelper.getAuth();
+//   if (!token?.data?.accessToken) {
+//     throw new Error('No access token available');
+//   }
+
+//   const headers: Record<string, any> = {
+//     ...config.headers,
+//     Authorization: `Bearer ${token.data.accessToken}`,
+//   };
+
+//   // Only set Content-Type for application/json; for multipart/form-data, let axios handle it
+//   if (contentType === 'application/json') {
+//     headers['Content-Type'] = 'application/json';
+//   }
+
+//   try {
+//     const response = await axios({
+//       method,
+//       url,
+//       data,
+//       headers,
+//       ...config,
+//     });
+
+//     return response;
+//   } catch (error: any) {
+//     console.error('apiRequest error:', error.response || error.message || error);
+//     if (error.response?.status === 401) {
+//       const newAuth = await refreshAccessToken();
+//       headers.Authorization = `Bearer ${newAuth.data.accessToken}`;
+//       if (contentType === 'application/json') {
+//         headers['Content-Type'] = 'application/json';
+//       }
+//       const retryResponse = await axios({
+//         method,
+//         url,
+//         data,
+//         headers,
+//         ...config,
+//       });
+//       return retryResponse;
+//     }
+//     throw error;
+//   }
+// };
+
+
 export function getClientIP(request: NextRequest): string {
   return (
     request.headers.get('x-forwarded-for') ||

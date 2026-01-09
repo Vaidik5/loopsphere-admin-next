@@ -86,7 +86,7 @@ export const MENU_SIDEBAR_COMPACT: MenuConfig = [
     children: [
       {
         title: 'Users',
-        path: '/user-management/users',
+        path: '/users',
       },
     ],
   },
