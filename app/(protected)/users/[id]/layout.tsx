@@ -1,6 +1,6 @@
 'use client';
 
-import React, { use, useEffect, useMemo, useState } from 'react';
+import React, { use, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -25,7 +25,10 @@ import {
 } from '@/components/common/toolbar';
 import { UserProvider } from './components/user-context';
 import UserHero from './components/user-hero';
-
+import { apiRequest } from '@/lib/api-request';
+import { API_ENDPOINTS } from '@/lib/api-endpoints';
+import { TeamsQueryApiResponse } from '@/types/adminUser';
+import { DataGridRequestParams } from '@/components/ui/data-grid';
 type NavRoutes = Record<
   string,
   {
@@ -79,27 +82,53 @@ export default function UserLayout({
     }
   }, [navRoutes, pathname]);
 
+  // Fetch user data
   const { data: user, isLoading } = useQuery({
-    queryKey: ['user-user', id],
+    queryKey: ['user', id],
     queryFn: async () => {
-      const response = await apiFetch(`/api/user-management/users/${id}`);
-
-    
-
-      if (!response.ok) {
-        const { message } = await response.json();
-        throw new Error(message);
-      }
-
-      return response.json();
+      const response = await apiRequest('GET', `${API_ENDPOINTS.GET_BY_ID_ADMINS}/${id}`);
+      return response.data;
     },
-    staleTime: Infinity,
-    gcTime: 1000 * 60 * 60, // 60 minutes
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    retry: 1,
   });
 
+  // const fetchTeams = useCallback(async (params: DataGridRequestParams) => {
+  //   try {
+  //     const queryParams = new URLSearchParams();
+  //     queryParams.set('page', String(params.pageIndex + 1));
+  //     queryParams.set('limit', String(params.pageSize));
+
+  //     // Sorting
+  //     if (params.sorting?.[0]?.id) {
+  //       queryParams.set('sort', params.sorting[0].id);
+  //       queryParams.set('order', params.sorting[0].desc ? 'desc' : 'asc');
+  //     }
+
+  //     // Search
+  //     const queryFilter = params.columnFilters?.find((filter: any) => filter.id === 'query') as
+  //       | { id: string; value: string }
+  //       | undefined;
+  //     if (queryFilter?.value) {
+  //       queryParams.set('search', queryFilter.value);
+  //     }
+
+  //     const response = await apiRequest<TeamsQueryApiResponse>(
+  //       'GET',
+  //       `${API_ENDPOINTS.GET_ALL_ADMIN_USERS_LIST}?${queryParams.toString()}`
+  //     );
+
+  //     if (response.status === 204) {
+  //       return { data: [], totalCount: 0 };
+  //     }
+
+  //     return {
+  //       data: response.data.data,
+  //       totalCount: response.data.pagination.totalRecords
+  //     };
+  //   } catch (error) {
+  //     console.error('API Error:', error);
+  //     return { data: [], totalCount: 0 };
+  //   }
+  // }, []);
   // Handler for tab click: instantly update active tab then navigate.
   const handleTabClick = (key: string, path: string) => {
     setActiveTab(key);
@@ -120,19 +149,16 @@ export default function UserLayout({
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>User Management</BreadcrumbPage>
+                  <BreadcrumbPage>Admin Management</BreadcrumbPage>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/user/users">Users</BreadcrumbLink>
-                </BreadcrumbItem>
+             
               </BreadcrumbList>
             </Breadcrumb>
           </ToolbarHeading>
           <ToolbarActions>
             <Button asChild variant="outline">
-              <Link href="/user-management/users">
-                <MoveLeft /> Back to users
+              <Link href="/users">
+                <MoveLeft /> Back to Admins
               </Link>
             </Button>
           </ToolbarActions>
