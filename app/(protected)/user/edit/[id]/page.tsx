@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   description: 'Edit admin user details.',
 };
 
+
 export default async function UserEditPage() {
   return (
     <>

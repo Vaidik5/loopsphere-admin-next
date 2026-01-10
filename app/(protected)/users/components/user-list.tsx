@@ -33,6 +33,12 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { User } from '@/app/models/user';
+import { useUserStore } from '@/stores';
+
+
+const {
+  deleteUser
+} = useUserStore();
 
 const UserList = () => {
   const router = useRouter();
@@ -277,7 +283,7 @@ const UserList = () => {
           <>
            <div className='flex justify-between '> 
             <SquarePen className="text-blue-500" />
-            <Trash2 className="text-red-500" />
+            <Trash2 className="text-red-500"  />
             </div>
    
           </>
