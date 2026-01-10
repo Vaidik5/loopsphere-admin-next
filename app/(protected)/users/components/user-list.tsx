@@ -13,6 +13,7 @@ import {
   SortingState,
   useReactTable,
   RowSelectionState,
+  Column,
 } from '@tanstack/react-table';
 import { ChevronRight, Plus, Search, X } from 'lucide-react';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
@@ -37,6 +38,10 @@ import { User } from '@/app/models/user';
 import UserInviteDialog from './user-add-dialog';
 import { TeamsQueryApiResponse } from '@/types/adminUser';
 
+
+interface IColumnFilterProps<TData, TValue> {
+  column: Column<TData, TValue>;
+}
 const UserList = () => {
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,

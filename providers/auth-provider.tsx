@@ -7,7 +7,7 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { UserImage, UserModel } from '@/types/auth'; // Ensure path
 import * as authApi from '@/lib/auth-api';
 import * as authHelper from '@/lib/auth-helpers';
@@ -43,6 +43,7 @@ const mapUser = (apiUser: UserModel): User => {
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -84,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     authHelper.removeAuth();
-    setUser(null);
+    router.push('/signin')
     window.location.href = '/signin';
   };
 

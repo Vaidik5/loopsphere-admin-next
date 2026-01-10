@@ -20,16 +20,12 @@ export default function ProtectedLayout({
     }
   }, [isLoading, user, router]);
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <div className="flex items-center justify-center h-screen w-full">
         <LoaderCircleIcon className="animate-spin h-12 w-12 text-primary" />
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return <Demo1Layout>{children}</Demo1Layout>;

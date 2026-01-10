@@ -72,7 +72,7 @@ export default function Page() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || user) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
         <LoaderCircleIcon className="animate-spin h-12 w-12 text-primary" />
