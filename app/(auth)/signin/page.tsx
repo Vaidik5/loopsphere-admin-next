@@ -23,7 +23,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Icons } from '@/components/common/icons';
 import { getSigninSchema, SigninSchemaType } from '../forms/signin-schema';
-
+import { toAbsoluteUrl } from '@/lib/helpers';
+import Image from 'next/image';
 export default function Page() {
   const { login, user, isLoading } = useAuth();
   const router = useRouter();
@@ -32,19 +33,35 @@ export default function Page() {
     if (!isLoading && user) {
       router.push('/');
     }
-    console.log('User in Signin Page:', user);
+    // console.log('User in Signin Page:', user);
   }, [user, isLoading, router]);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Load rememberMe preference and saved email from localStorage
+  const getSavedCredentials = () => {
+    if (typeof window === 'undefined') {
+      return { email: 'contact@loopbots.com', password: '', rememberMe: false };
+    }
+
+    try {
+      const rememberMe = localStorage.getItem('rememberMe') === 'true';
+      const savedEmail = rememberMe ? localStorage.getItem('savedEmail') : null;
+
+      return {
+        email: savedEmail || 'contact@loopbots.com',
+        password: '', // Never save password, always require user to enter
+        rememberMe,
+      };
+    } catch (error) {
+      return { email: 'contact@loopbots.com', password: '', rememberMe: false };
+    }
+  };
+
   const form = useForm<SigninSchemaType>({
     resolver: zodResolver(getSigninSchema()),
-    defaultValues: {
-      email: 'contact@loopbots.com',
-      password: 'Loopbots@123',
-      rememberMe: false,
-    },
+    defaultValues: getSavedCredentials(),
   });
 
   // Find the onSubmit function and replace it with this:
@@ -53,8 +70,25 @@ export default function Page() {
     setError(null);
 
     try {
+      // Save email to localStorage if rememberMe is checked
+      if (values.rememberMe) {
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('savedEmail', values.email);
+          } catch (e) {
+            console.error('Failed to save email', e);
+          }
+        }
+      } else {
+        // Remove saved email if rememberMe is unchecked
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('savedEmail');
+        }
+      }
+
       // Use your custom auth instead of NextAuth
-      const success = await login(values.email, values.password);
+      // Pass rememberMe value to login function
+      const success = await login(values.email, values.password, values.rememberMe ?? false);
 
       if (success) {
         router.push('/');
@@ -86,13 +120,19 @@ export default function Page() {
         onSubmit={form.handleSubmit(onSubmit)}
         className="block w-full space-y-5"
       >
-        <div className="space-y-1.5 pb-3">
-          <h1 className="text-2xl font-semibold tracking-tight text-center">
-            LoopSphere Admin
-          </h1>
+        <div className=" flex flex-col items-center justify-center">
+        
+          <Image
+            src={toAbsoluteUrl('/media/app/default-logo.svg')}
+            className="default-logo"
+            alt="Default Logo"
+            width={200}
+            height={200}  
+          />
+       
         </div>
 
-        <div className="relative py-1.5"></div>
+      
 
         {error && (
           <Alert variant="destructive">
@@ -126,7 +166,7 @@ export default function Page() {
                 <FormLabel>Password</FormLabel>
                 <Link
                   href="/reset-password"
-                  className="text-sm font-semibold text-foreground hover:text-primary"
+                  className="text-sm font-semibold text-foreground text-primary hover:text-foreground/80"
                 >
                   Forgot Password?
                 </Link>

@@ -50,7 +50,7 @@ export function Header() {
   useEffect(() => {
     setIsSidebarSheetOpen(false);
     setIsMegaMenuSheetOpen(false);
-    console.log('User in Header:', user);
+    // console.log('User in Header:', user);
   }, [pathname, user]);
 
   return (

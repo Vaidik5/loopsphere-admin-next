@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
   ColumnDef,
@@ -25,6 +25,7 @@ import {
   DataGridApiFetchParams,
   DataGridApiResponse,
 } from '@/components/ui/data-grid';
+import { Trash2 ,SquarePen } from 'lucide-react';
 import { DataGridColumnHeader } from '@/components/ui/data-grid-column-header';
 import { DataGridPagination } from '@/components/ui/data-grid-pagination';
 import { DataGridTable } from '@/components/ui/data-grid-table';
@@ -32,15 +33,14 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { User } from '@/app/models/user';
-import UserInviteDialog from './user-add-dialog';
 
 const UserList = () => {
+  const router = useRouter();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   });
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch users from the server API
@@ -101,7 +101,7 @@ const UserList = () => {
     // The API returns _id.
     const userId = row._id || row.id;
     if (userId) {
-      redirect(`/user-management/users/${userId}`);
+      router.push(`/user/edit/${userId}`);
     }
   };
 
@@ -163,7 +163,7 @@ const UserList = () => {
         enableSorting: true,
         enableHiding: false,
       },
-      {
+      { 
         accessorKey: 'email',
         id: 'email',
         header: ({ column }) => (
@@ -241,22 +241,25 @@ const UserList = () => {
 
           const statusColorMap: Record<
             string,
-            NonNullable<BadgeProps['variant']>
-          > = {
-            active: 'success',
-            inactive: 'destructive',
-            pending: 'warning',
-            deleted: 'destructive',
-            default: 'secondary',
+           string>
+          = {
+           active: 'bg-green-100 text-green-500',
+            inactive: 'bg-red-100 text-red-500',
+            pending: 'bg-yellow-100 text-yellow-500',
+            deleted: 'bg-red-100 text-red-500',
+            // default case
+            default: 'bg-slate-100 text-slate-500'
+        
           };
 
-          const variant = statusColorMap[statusCode] || 'secondary';
+          const variant = statusColorMap[statusCode] || statusColorMap['default'];
 
           return (
-            <Badge variant={variant} appearance="ghost">
-              <BadgeDot />
+             <span
+              className={`inline-block px-2 py-1 rounded-med text-xs font-semibold ${variant}`}
+            >
               {statusLabel}
-            </Badge>
+            </span>
           );
         },
         size: 125,
@@ -271,12 +274,18 @@ const UserList = () => {
         accessorKey: 'actions',
         header: 'Actions',
         cell: () => (
-          <ChevronRight className="text-muted-foreground/70 size-3.5" />
+          <>
+           <div className='flex justify-between '> 
+            <SquarePen className="text-blue-500" />
+            <Trash2 className="text-red-500" />
+            </div>
+   
+          </>
         ),
         meta: {
           skeleton: <Skeleton className="size-4" />,
         },
-        size: 60,
+        size: 80,
         enableSorting: false,
         enableHiding: false,
         enableResizing: false,
@@ -348,7 +357,7 @@ const UserList = () => {
           <Button
             disabled={isLoading && true}
             onClick={() => {
-              setInviteDialogOpen(true);
+              router.push('/user/add');
             }}
           >
             <Plus />
@@ -389,11 +398,6 @@ const UserList = () => {
           </CardFooter>
         </Card>
       </DataGrid>
-
-      <UserInviteDialog
-        open={inviteDialogOpen}
-        closeDialog={() => setInviteDialogOpen(false)}
-      />
     </>
   );
 };

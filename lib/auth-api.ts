@@ -8,12 +8,15 @@ export const login = async (
   email: string,
   password: string,
   identifier: string = 'device-uuid',
+  rememberMe: boolean = false,
 ) => {
   const response = await axios.post<AuthModel>(API_ENDPOINTS.ADMIN_LOGIN, {
     email,
     password,
     identifier,
   });
+  // Store rememberMe flag with the auth response for later use
+  (response.data as any).rememberMe = rememberMe;
   return response.data;
 };
 

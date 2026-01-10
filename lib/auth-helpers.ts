@@ -4,11 +4,18 @@ const ACCESS_TOKEN_COOKIE = 'loopsphere-admin-access-token';
 const REFRESH_TOKEN_COOKIE = 'loopsphere-admin-refresh-token';
 
 // Helper to set a cookie
-const setCookie = (name: string, value: string, days: number = 7) => {
+const setCookie = (name: string, value: string, days?: number) => {
   if (typeof window === 'undefined') return;
-  const date = new Date();
-  date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
-  const expires = '; expires=' + date.toUTCString();
+  
+  // If days is undefined or 0, create a session cookie (expires when browser closes)
+  // Otherwise, create a persistent cookie with expiration
+  let expires = '';
+  if (days && days > 0) {
+    const date = new Date();
+    date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+    expires = '; expires=' + date.toUTCString();
+  }
+  
   document.cookie =
     name +
     '=' +
@@ -59,19 +66,36 @@ export const getAuth = (): AuthModel | undefined => {
   return undefined;
 };
 
-export const setAuth = (auth: AuthModel) => {
+export const setAuth = (auth: AuthModel, rememberMe: boolean = false) => {
   try {
     // Try to find the tokens in various likely locations based on AuthModel or raw API response
     const accessToken =
       auth?.data?.accessToken || auth?.access_token || auth?.api_token;
     const refreshToken = auth?.data?.refreshToken || auth?.refreshToken;
 
+    // If rememberMe is true, set cookies to expire in 30 days
+    // If rememberMe is false, create session cookies (no expiration, expire when browser closes)
+    const cookieExpirationDays = rememberMe ? 30 : undefined;
+
     if (accessToken) {
-      setCookie(ACCESS_TOKEN_COOKIE, accessToken, 7);
+      setCookie(ACCESS_TOKEN_COOKIE, accessToken, cookieExpirationDays);
     }
 
     if (refreshToken) {
-      setCookie(REFRESH_TOKEN_COOKIE, refreshToken, 7);
+      setCookie(REFRESH_TOKEN_COOKIE, refreshToken, cookieExpirationDays);
+    }
+
+    // Store rememberMe preference in localStorage for reference
+    if (typeof window !== 'undefined') {
+      try {
+        if (rememberMe) {
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          localStorage.removeItem('rememberMe');
+        }
+      } catch (e) {
+        console.error('Failed to store rememberMe preference', e);
+      }
     }
   } catch (error) {
     console.error('AUTH COOKIE SAVE ERROR', error);

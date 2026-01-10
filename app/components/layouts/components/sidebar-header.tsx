@@ -6,7 +6,7 @@ import { toAbsoluteUrl } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
 import { useSettings } from '@/providers/settings-provider';
 import { Button } from '@/components/ui/button';
-
+import Image from 'next/image';
 export function SidebarHeader() {
   const { settings, storeOption } = useSettings();
 
@@ -21,10 +21,12 @@ export function SidebarHeader() {
     <div className="sidebar-header hidden lg:flex items-center relative justify-between px-3 lg:px-6 shrink-0">
       <Link href="/">
         <div className="dark:hidden">
-          <img
+          <Image
             src={toAbsoluteUrl('/media/app/default-logo.svg')}
-            className="default-logo h-[22px] max-w-none"
+            className="default-logo"
             alt="Default Logo"
+            width={150}
+            height={150}
           />
           <img
             src={toAbsoluteUrl('/media/app/mini-logo.svg')}

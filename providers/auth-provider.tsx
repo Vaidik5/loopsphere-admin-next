@@ -22,7 +22,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
   // Keep these for compatibility with existing UI
@@ -65,11 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string, rememberMe: boolean = false): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const auth = await authApi.login(email, password);
-      authHelper.setAuth(auth);
+      const auth = await authApi.login(email, password, 'device-uuid', rememberMe);
+      authHelper.setAuth(auth, rememberMe);
 
       const apiUser = await authApi.getUser();
       setUser(mapUser(apiUser));
