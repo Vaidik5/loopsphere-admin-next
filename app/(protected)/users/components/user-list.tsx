@@ -1,9 +1,8 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { redirect } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import {
   ColumnDef,
   getCoreRowModel,
@@ -12,8 +11,6 @@ import {
   PaginationState,
   SortingState,
   useReactTable,
-  RowSelectionState,
-  Column,
 } from '@tanstack/react-table';
 import { ChevronRight, Plus, Search, X } from 'lucide-react';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
@@ -36,26 +33,16 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { User } from '@/app/models/user';
 import UserInviteDialog from './user-add-dialog';
-import { TeamsQueryApiResponse } from '@/types/adminUser';
 
-
-interface IColumnFilterProps<TData, TValue> {
-  column: Column<TData, TValue>;
-}
 const UserList = () => {
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   });
-    const [refreshKey, setRefreshKey] = useState(0);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const ColumnFilter = <TData, TValue>({ column }: IColumnFilterProps<TData, TValue>) => {
-    const [inputValue, setInputValue] = useState((column.getFilterValue() as string) ?? '');
 
-    return <></>;
-  };
   // Fetch users from the server API
   const fetchUsers = async ({
     pageIndex,
@@ -114,10 +101,10 @@ const UserList = () => {
     // The API returns _id.
     const userId = row._id || row.id;
     if (userId) {
-      redirect(`/users/${userId}`);
+      redirect(`/user-management/users/${userId}`);
     }
   };
-const handleRowSelection = (state: RowSelectionState) => {}; 
+
   const columns = useMemo<ColumnDef<User>[]>(
     () => [
       {
@@ -301,44 +288,7 @@ const handleRowSelection = (state: RowSelectionState) => {};
   const [columnOrder, setColumnOrder] = useState<string[]>(
     columns.map((column) => column.id as string),
   );
- const fetchTeams = useCallback(async (params: DataGridApiFetchParams) => {
-    try {
-      const queryParams = new URLSearchParams();
-      queryParams.set('page', String(params.pageIndex + 1));
-      queryParams.set('limit', String(params.pageSize));
 
-      // Sorting
-      if (params.sorting?.[0]?.id) {
-        queryParams.set('sort', params.sorting[0].id);
-        queryParams.set('order', params.sorting[0].desc ? 'desc' : 'asc');
-      }
-
-      // Search
-      const queryFilter = params.filters?.find((filter: any) => filter.id === 'query') as
-        | { id: string; value: string }
-        | undefined;
-      if (queryFilter?.value) {
-        queryParams.set('search', queryFilter.value);
-      }
-
-      const response = await apiRequest<TeamsQueryApiResponse>(
-        'GET',
-        `${API_ENDPOINTS.GET_ALL_ADMIN_USERS_LIST}?${queryParams.toString()}`
-      );
-
-      if (response.status === 204) {
-        return { data: [], totalCount: 0 };
-      }
-
-      return {
-        data: response.data.data,
-        totalCount: response.data.pagination.totalRecords
-      };
-    } catch (error) {
-      console.error('API Error:', error);
-      return { data: [], totalCount: 0 };
-    }
-  }, []);
   const table = useReactTable({
     columns,
     data: data?.data || [],
@@ -361,63 +311,12 @@ const handleRowSelection = (state: RowSelectionState) => {};
     manualFiltering: true,
   });
 
-  const DataGridToolbar = ({ setSearchQuery }: { setSearchQuery: (query: string) => void }) => {
+  const DataGridToolbar = () => {
     const [inputValue, setInputValue] = useState(searchQuery);
 
-
-
-
-    useEffect(() => {
-      const handler = setTimeout(() => {
-        setSearchQuery(inputValue);
-
-        if (inputValue.trim() === '') {
-          table.setColumnFilters(
-            table.getState().columnFilters.filter((filter) => filter.id !== 'query')
-          );
-        } else {
-          table.setColumnFilters([
-            ...table.getState().columnFilters.filter((filter) => filter.id !== 'query'),
-            { id: 'query', value: inputValue }
-          ]);
-        }
-      }, 400);
-
-      return () => clearTimeout(handler);
-    }, [inputValue]);
-
-
-
-       function debounce<F extends (...args: any[]) => void>(func: F, delay: number): F {
-      let timer: ReturnType<typeof setTimeout>;
-      return function (...args: any[]) {
-        clearTimeout(timer);
-        timer = setTimeout(() => func(...args), delay);
-      } as F;
-    }
-    const debouncedSearch = useMemo(
-      () =>
-        debounce((value: string) => {
-          setSearchQuery(value);
-
-          if (value.trim() === '') {
-            table.setColumnFilters(
-              table.getState().columnFilters.filter((filter) => filter.id !== 'query')
-            );
-          } else {
-            table.setColumnFilters([
-              ...table.getState().columnFilters.filter((filter) => filter.id !== 'query'),
-              { id: 'query', value }
-            ]);
-          }
-        }, 500),
-      [table]
-    );
-
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-      setInputValue(value);
-      debouncedSearch(value);
+    const handleSearch = () => {
+      setSearchQuery(inputValue);
+      setPagination({ ...pagination, pageIndex: 0 });
     };
 
     return (
@@ -428,11 +327,10 @@ const handleRowSelection = (state: RowSelectionState) => {};
             <Input
               placeholder="Search users"
               value={inputValue}
-              onChange={handleChange}
-              // onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               disabled={isLoading}
               className="ps-9 w-full sm:40 md:w-64"
-              autoFocus
             />
             {searchQuery.length > 0 && (
               <Button
@@ -464,20 +362,22 @@ const handleRowSelection = (state: RowSelectionState) => {};
   return (
     <>
       <DataGrid
-          key={refreshKey}
-          columns={columns}
-          serverSide={true}
-          onFetchData={fetchTeams}
-          rowSelection={true}
-          getRowId={(row: any) => row.id}
-          onRowSelectionChange={handleRowSelection}
-          pagination={{ size: 10 }}
-          toolbar={<DataGridToolbar setSearchQuery={setSearchQuery} />}
-          layout={{ card: true }}
-          refreshKey={refreshKey as any}
+        table={table}
+        recordCount={data?.pagination.total || 0}
+        isLoading={isLoading}
+        onRowClick={handleRowClick}
+        tableLayout={{
+          columnsResizable: true,
+          columnsPinnable: true,
+          columnsMovable: true,
+          columnsVisibility: true,
+        }}
+        tableClassNames={{
+          edgeCell: 'px-5',
+        }}
       >
         <Card>
-          {/* <DataGridToolbar setSearchQuery={setSearchQuery} /> */}
+          <DataGridToolbar />
           <CardTable>
             <ScrollArea>
               <DataGridTable />
