@@ -102,6 +102,18 @@ const UserList = () => {
     retry: 1,
   });
 
+  // Prepare table data and total records.
+  // Sometimes backend may return all rows ignoring limit; slice as a fallback
+  // so the UI respects `pageSize` selection. If the API provides total
+  // records in pagination, prefer that for page count.
+  const tableData = useMemo(() => {
+    const rows = data?.data || [];
+    const start = pagination.pageIndex * pagination.pageSize;
+    return rows.slice(start, start + pagination.pageSize);
+  }, [data, pagination]);
+
+  const totalRecords = data?.pagination?.total ?? data?.data?.length ?? 0;
+
   const handleRowClick = (row: User) => {
     // Determine the ID to use. The new User interface has id and _id.
     // The API returns _id.
@@ -334,8 +346,8 @@ const UserList = () => {
 
   const table = useReactTable({
     columns,
-    data: data?.data || [],
-    pageCount: Math.ceil((data?.pagination.total || 0) / pagination.pageSize),
+    data: tableData,
+    pageCount: Math.ceil(totalRecords / pagination.pageSize),
     getRowId: (row: User) => row._id || row.id,
     state: {
       pagination,
