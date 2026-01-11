@@ -39,7 +39,7 @@ import {
 // import { useRoleSelectQuery } from '';
 import { UserAddSchema, UserAddSchemaType } from '../forms/user-add-schema';
 
-const UserAddDialog = ({
+const UserDeleteDialog = ({
   open,
   closeDialog,
 }: {
@@ -210,4 +210,4 @@ const UserAddDialog = ({
   );
 };
 
-export default UserAddDialog;
+export default UserDeleteDialog;

@@ -25,7 +25,7 @@ import {
   DataGridApiFetchParams,
   DataGridApiResponse,
 } from '@/components/ui/data-grid';
-import { Trash2 ,SquarePen } from 'lucide-react';
+import { Trash2, SquarePen } from 'lucide-react';
 import { DataGridColumnHeader } from '@/components/ui/data-grid-column-header';
 import { DataGridPagination } from '@/components/ui/data-grid-pagination';
 import { DataGridTable } from '@/components/ui/data-grid-table';
@@ -33,12 +33,12 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { User } from '@/app/models/user';
-import { useUserStore } from '@/stores';
+import UserDeleteConfirm from './user-delete-confirm';
 
 
-const {
-  deleteUser
-} = useUserStore();
+// const {
+//   deleteUser
+// } = useUserStore();
 
 const UserList = () => {
   const router = useRouter();
@@ -111,6 +111,18 @@ const UserList = () => {
     }
   };
 
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const openDelete = (id: string) => {
+    setSelectedUserId(id);
+    setDeleteOpen(true);
+  };
+
+  const closeDelete = () => {
+    setSelectedUserId(null);
+    setDeleteOpen(false);
+  };
+
   const columns = useMemo<ColumnDef<User>[]>(
     () => [
       {
@@ -169,7 +181,7 @@ const UserList = () => {
         enableSorting: true,
         enableHiding: false,
       },
-      { 
+      {
         accessorKey: 'email',
         id: 'email',
         header: ({ column }) => (
@@ -247,21 +259,21 @@ const UserList = () => {
 
           const statusColorMap: Record<
             string,
-           string>
-          = {
-           active: 'bg-green-100 text-green-500',
+            string>
+            = {
+            active: 'bg-green-100 text-green-500',
             inactive: 'bg-red-100 text-red-500',
             pending: 'bg-yellow-100 text-yellow-500',
             deleted: 'bg-red-100 text-red-500',
             // default case
             default: 'bg-slate-100 text-slate-500'
-        
+
           };
 
           const variant = statusColorMap[statusCode] || statusColorMap['default'];
 
           return (
-             <span
+            <span
               className={`inline-block px-2 py-1 rounded-med text-xs font-semibold ${variant}`}
             >
               {statusLabel}
@@ -279,15 +291,31 @@ const UserList = () => {
       {
         accessorKey: 'actions',
         header: 'Actions',
-        cell: () => (
-          <>
-           <div className='flex justify-between '> 
-            <SquarePen className="text-blue-500" />
-            <Trash2 className="text-red-500"  />
+        cell: ({ row }) => {
+          const user = row.original;
+          const userId = user._id || user.id;
+          return (
+            <div className="flex justify-between">
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const id = userId;
+                  if (id) router.push(`/user/edit/${id}`);
+                }}
+              >
+                <SquarePen className="text-blue-500" />
+              </span>
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (userId) openDelete(String(userId));
+                }}
+              >
+                <Trash2 className="text-red-500 cursor-pointer" />
+              </span>
             </div>
-   
-          </>
-        ),
+          );
+        },
         meta: {
           skeleton: <Skeleton className="size-4" />,
         },
@@ -297,7 +325,7 @@ const UserList = () => {
         enableResizing: false,
       },
     ],
-    [],
+    [openDelete, router],
   );
 
   const [columnOrder, setColumnOrder] = useState<string[]>(
@@ -376,6 +404,7 @@ const UserList = () => {
 
   return (
     <>
+      <UserDeleteConfirm open={deleteOpen} onClose={closeDelete} userId={selectedUserId} />
       <DataGrid
         table={table}
         recordCount={data?.pagination.total || 0}

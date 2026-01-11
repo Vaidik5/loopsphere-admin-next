@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.188:3000/api'; // Fallback or from env
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://10.32.81.103:3000/api'; // Fallback or from env
 
 export const API_ENDPOINTS = {
   ADMIN_LOGIN: `${API_URL}/admin/login`,
@@ -136,7 +136,7 @@ export const API_ENDPOINTS = {
   DELETE_STATE_LOCATION: `${API_URL}/location/states/delete`,
   STATE_LIST_LOCATION: `${API_URL}/location/states/list`,
 
-//======================ROLES APIS =====================
+  //======================ROLES APIS =====================
   GET_ROLES: `${API_URL}/role/list?page=1`,
   ADD_ROLE: `${API_URL}/roles/add`,
   EDIT_ROLE: `${API_URL}/roles/edit`,
