@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -36,6 +36,77 @@ import { User } from '@/app/models/user';
 import UserDeleteConfirm from './user-delete-confirm';
 
 
+// Moved DataGridToolbar outside to avoid re-creation and input focus loss
+interface DataGridToolbarProps {
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  setPagination: React.Dispatch<React.SetStateAction<PaginationState>>;
+  isLoading: boolean;
+  onAddUser: () => void;
+}
+
+const DataGridToolbar = ({
+  searchQuery,
+  setSearchQuery,
+  setPagination,
+  isLoading,
+  onAddUser,
+}: DataGridToolbarProps) => {
+  const [inputValue, setInputValue] = useState(searchQuery);
+
+  // Debounce logic
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (inputValue !== searchQuery) {
+        setSearchQuery(inputValue);
+        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [inputValue, searchQuery, setSearchQuery, setPagination]);
+
+  return (
+    <CardHeader className="flex-col flex-wrap sm:flex-row items-stretch sm:items-center py-5">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div className="relative">
+          <Search className="size-4 text-muted-foreground absolute start-3 top-1/2 -translate-y-1/2" />
+          <Input
+            placeholder="Search users"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            disabled={isLoading}
+            className="ps-9 w-full sm:40 md:w-64"
+          />
+          {inputValue.length > 0 && (
+            <Button
+              mode="icon"
+              variant="dim"
+              className="absolute end-1.5 top-1/2 -translate-y-1/2 h-6 w-6"
+              onClick={() => {
+                setInputValue('');
+              }}
+            >
+              <X />
+            </Button>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center justify-end">
+        <Button
+          disabled={isLoading && true}
+          onClick={onAddUser}
+        >
+          <Plus />
+          Add Admin User
+        </Button>
+      </div>
+    </CardHeader>
+  );
+};
+
 // const {
 //   deleteUser
 // } = useUserStore();
@@ -58,7 +129,7 @@ const UserList = () => {
     const params = new URLSearchParams({
       page: String(pageIndex + 1),
       limit: String(pageSize),
-      ...(searchQuery ? { query: searchQuery } : {}),
+      ...(searchQuery ? { search: searchQuery } : {}),
     });
 
     const response = await apiRequest<any>(
@@ -366,53 +437,7 @@ const UserList = () => {
     manualFiltering: true,
   });
 
-  const DataGridToolbar = () => {
-    const [inputValue, setInputValue] = useState(searchQuery);
 
-    const handleSearch = () => {
-      setSearchQuery(inputValue);
-      setPagination({ ...pagination, pageIndex: 0 });
-    };
-
-    return (
-      <CardHeader className="flex-col flex-wrap sm:flex-row items-stretch sm:items-center py-5">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-          <div className="relative">
-            <Search className="size-4 text-muted-foreground absolute start-3 top-1/2 -translate-y-1/2" />
-            <Input
-              placeholder="Search users"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              disabled={isLoading}
-              className="ps-9 w-full sm:40 md:w-64"
-            />
-            {searchQuery.length > 0 && (
-              <Button
-                mode="icon"
-                variant="dim"
-                className="absolute end-1.5 top-1/2 -translate-y-1/2 h-6 w-6"
-                onClick={() => setSearchQuery('')}
-              >
-                <X />
-              </Button>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center justify-end">
-          <Button
-            disabled={isLoading && true}
-            onClick={() => {
-              router.push('/user/add');
-            }}
-          >
-            <Plus />
-            Add Admin User
-          </Button>
-        </div>
-      </CardHeader>
-    );
-  };
 
   return (
     <>
@@ -433,7 +458,13 @@ const UserList = () => {
         }}
       >
         <Card>
-          <DataGridToolbar />
+          <DataGridToolbar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            setPagination={setPagination}
+            isLoading={isLoading}
+            onAddUser={() => router.push('/user/add')}
+          />
           <CardTable>
             <ScrollArea>
               <DataGridTable />
