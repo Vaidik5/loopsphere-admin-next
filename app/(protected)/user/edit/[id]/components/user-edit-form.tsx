@@ -1,14 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { LoaderCircleIcon } from 'lucide-react';
-import { API_ENDPOINTS } from '@/lib/api-endpoints';
-import { apiRequest } from '@/lib/api-request';
+import { getAuth } from '@/lib/auth-helpers';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -28,45 +26,50 @@ import {
 } from '@/components/ui/select';
 import { ImageInput, type ImageInputFiles } from '@/components/image-input/image-input';
 import { UserEditSchema, UserEditSchemaType } from '../forms/user-edit-schema';
-
-interface Country {
-  _id: string;
-  name: string;
-  isdCode: string;
-  flag?: string;
-}
-
-interface Client {
-  _id: string;
-  firstName?: string;
-  lastName?: string;
-  companyName?: string;
-}
-
-interface BusinessUnit {
-  _id: string;
-  name: string;
-}
+import { useDataStore, useUserStore } from '@/stores';
 
 const UserEditForm = () => {
   const router = useRouter();
   const params = useParams();
   const userId = params.id as string;
-  const queryClient = useQueryClient();
-  const [countries, setCountries] = useState<Country[]>([]);
-  const [filteredCountries, setFilteredCountries] = useState<Country[]>([]);
+  
+  // Zustand stores
+  const {
+    countries,
+    filteredCountries,
+    countriesLoading,
+    fetchCountries,
+    filterCountries,
+    clients,
+    clientsLoading,
+    roles,
+    rolesLoading,
+    fetchRoles,
+    fetchClients,
+    getBusinessUnits,
+    fetchBusinessUnits,
+    businessUnitsCache,
+    businessUnitsLoading,
+  } = useDataStore();
+
+  const selectedUser = useUserStore((state) => state.selectedUser);
+  const users = useUserStore((state) => state.users);
+  const fetchUserById = useUserStore((state) => state.fetchUserById);
+  const updateUser = useUserStore((state) => state.updateUser);
+  const usersLoading = useUserStore((state) => state.usersLoading);
+  const clearSelectedUser = useUserStore((state) => state.clearSelectedUser);
+
   const [countrySearch, setCountrySearch] = useState('');
   const [selectIsdOpen, setSelectIsdOpen] = useState(false);
-  const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
-  const [businessUnits, setBusinessUnits] = useState<{ id: string; name: string }[]>([]);
   const [imageFiles, setImageFiles] = useState<ImageInputFiles>([]);
-  const [dataLoading, setDataLoading] = useState(true);
-  const [originalValues, setOriginalValues] = useState({
-    email: '',
-    isdCode: '',
-    countryId: '',
-    mobileNumber: '',
-  });
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  // Helper to extract ID from string or object
+  const resolveId = (val: any) => {
+    if (!val) return '';
+    if (typeof val === 'string') return val;
+    return val._id || val.id || '';
+  };
 
   const form = useForm<UserEditSchemaType>({
     resolver: zodResolver(UserEditSchema),
@@ -74,11 +77,12 @@ const UserEditForm = () => {
       firstName: '',
       lastName: '',
       email: '',
-      password: '',
+  
       mobileNumber: '',
       isdCode: '',
       countryId: '',
-      role: '',
+      isdCodeCountryId: '',
+      roleId: '',
       status: '',
       clientId: '',
       businessUnitId: '',
@@ -87,257 +91,266 @@ const UserEditForm = () => {
     mode: 'onSubmit',
   });
 
-  // Fetch countries
-  const { data: countriesData } = useQuery({
-    queryKey: ['countries-list'],
-    queryFn: async () => {
-      const response = await apiRequest<any>('GET', API_ENDPOINTS.GET_ALL_COUNTRY);
-      if (response?.data?.success) {
-        const allCountries = response.data.data.map((country: any) => ({
-          ...country,
-          flag: country.flag || '',
-        }));
-        setCountries(allCountries);
-        setFilteredCountries(allCountries);
-        return allCountries;
-      }
-      return [];
-    },
-  });
+  const clientId = form.watch('clientId');
+  const businessUnitId = form.watch('businessUnitId');
+  
+  // Merge current user's BU if missing from list (to handle inactive/deleted BUs strictly for display)
+  const businessUnits = useMemo(() => {
+    // Determine the list based on selected client
+    const cached = (clientId && businessUnitsCache[clientId]) ? [...businessUnitsCache[clientId]] : [];
+    
+    // If no specific BU selected yet, just return the list
+    if (!businessUnitId) return cached;
+    
+    // Check if the currently selected BU ID is already in the list
+    const isPresent = cached.some((bu: any) => (bu.id || bu._id) === businessUnitId);
+    if (isPresent) return cached;
 
-  // Fetch clients
-  const { data: clientsData } = useQuery({
-    queryKey: ['client-getActive'],
-    queryFn: async () => {
-      const response = await apiRequest<any>('GET', API_ENDPOINTS.PANAROMA_CLIENT_LIST);
-      if (response?.data?.data) {
-        const clientList = response.data.data.map((item: Client) => ({
-          id: item._id,
-          name: `${item.firstName || ''} ${item.lastName || ''}`.trim() || item.companyName || 'Client',
-        }));
-        setClients(clientList);
-        return clientList;
-      }
-      return [];
-    },
-  });
+    // --- FALLBACK INJECTION LOGIC ---
+    // The selected BU is NOT in the list. We need to find its name and inject it.
+    
+    let injectedName = '';
+    const adminData = selectedUser as any;
 
-  // Fetch admin/me (to get current admin info if needed)
-  useQuery({
-    queryKey: ['admin-me'],
-    queryFn: async () => {
-      const response = await apiRequest<any>('GET', API_ENDPOINTS.ADMIN_GET_USER);
-      return response.data;
-    },
-  });
-
-  // Fetch admin user by ID
-  useQuery({
-    queryKey: ['admin-user', userId],
-    queryFn: async () => {
-      if (!userId) return null;
-      setDataLoading(true);
-      try {
-        const response = await apiRequest<any>('GET', `${API_ENDPOINTS.GET_BY_ID_ADMINS}/${userId}`);
-        if (response?.data?.success) {
-          const adminData = response.data.data;
-
-          setOriginalValues({
-            email: adminData.email || '',
-            isdCode: adminData.isdCode || '',
-            countryId: adminData.countryId || '',
-            mobileNumber: adminData.mobileNumber || '',
-          });
-
-          // Fetch business units for the client
-          if (adminData.clientId) {
-            await fetchBusinessUnits(adminData.clientId);
-          }
-
-          // Set form values
-          setTimeout(() => {
-            form.reset({
-              firstName: adminData.firstName || '',
-              lastName: adminData.lastName || '',
-              email: adminData.email || '',
-              password: '',
-              mobileNumber: adminData.mobileNumber || '',
-              isdCode: adminData.isdCode || '',
-              countryId: adminData.countryId || '',
-              role: adminData.role || '',
-              status: typeof adminData.status === 'object' ? adminData.status.code : adminData.status || '',
-              clientId: adminData.clientId || '',
-              businessUnitId: adminData.businessUnitId || '',
-              image: null,
-            });
-          }, 0);
-
-          // Set image if exists
-          if (adminData.image) {
-            const imageUrl = typeof adminData.image === 'string' 
-              ? adminData.image 
-              : (adminData.image as any)?.fileName || '';
-            if (imageUrl) {
-              setImageFiles([{ dataURL: imageUrl }]);
-            }
-          }
-
-          return adminData;
+    // 1. Try to find name in the current user object
+    if (adminData) {
+        // Direct object check
+        if (adminData.businessUnit && (adminData.businessUnit._id === businessUnitId || adminData.businessUnit.id === businessUnitId)) {
+             injectedName = adminData.businessUnit.name;
+        } 
+        // ID match check
+        else if (adminData.businessUnitId === businessUnitId && adminData.businessUnit?.name) {
+             injectedName = adminData.businessUnit.name;
         }
-        return null;
-      } catch (error) {
-        toast.error('Failed to fetch admin user data');
-        return null;
-      } finally {
-        setDataLoading(false);
-      }
-    },
-    enabled: !!userId,
-  });
+    }
 
-  // Filter countries when search changes
+    // 2. Try to find name in the global users list (if loaded)
+    if (!injectedName && users.length > 0) {
+        const foundUser = users.find((u: any) => 
+            ((u.businessUnit && (u.businessUnit._id === businessUnitId || u.businessUnit.id === businessUnitId)) ||
+             (u.businessUnitId === businessUnitId))
+        );
+        if (foundUser && (foundUser as any).businessUnit?.name) {
+             injectedName = (foundUser as any).businessUnit.name;
+        }
+    }
+
+    // 3. Fallback: Check if it exists in cache under a DIFFERENT client (edge case)
+    if (!injectedName) {
+         Object.values(businessUnitsCache).forEach((buList) => {
+             const found = buList.find((bu: any) => (bu.id || bu._id) === businessUnitId);
+             if (found) injectedName = found.name;
+         });
+    }
+
+    // If we found a name, inject it
+    if (injectedName) {
+        return [{ id: businessUnitId, name: injectedName }, ...cached];
+    } else {
+        // Last Resort: Inject with "Unknown Business Unit" or just ID so it's selected but with ugly label?
+        // Better to wait or leave it. But for now, let's try to inject IF we have matches
+    }
+
+    return cached;
+  }, [clientId, businessUnitId, businessUnitsCache, selectedUser, users]);
+
+  // Fetch initial data (Lists)
   useEffect(() => {
-    if (!selectIsdOpen) return;
-    const search = countrySearch.toLowerCase();
-    const filtered = countries.filter(
-      (c) => c.name.toLowerCase().includes(search) || c.isdCode.includes(search)
-    );
-    setFilteredCountries(filtered);
-  }, [countrySearch, countries, selectIsdOpen]);
+    if (countries.length === 0 && !countriesLoading) fetchCountries();
+    if (clients.length === 0 && !clientsLoading) fetchClients();
+    if (roles.length === 0 && !rolesLoading) fetchRoles();
+  }, [countries.length, clients.length, roles.length, fetchCountries, fetchClients, fetchRoles]);
 
-  // Fetch business units when client changes
-  const fetchBusinessUnits = async (clientId: string) => {
-    if (!clientId) {
-      setBusinessUnits([]);
-      form.setValue('businessUnitId', '');
-      return;
-    }
-    try {
-      const response = await apiRequest<any>(
-        'GET',
-        `${API_ENDPOINTS.GET_BY_CLIENT_BUSINESS}/${clientId}`
-      );
-      if (response?.data?.data) {
-        const buList = response.data.data.map((item: BusinessUnit) => ({
-          id: item._id,
-          name: item.name,
-        }));
-        setBusinessUnits(buList);
-      } else {
-        setBusinessUnits([]);
-      }
-    } catch (error) {
-      console.error('Error fetching business units:', error);
-      setBusinessUnits([]);
-    }
-  };
+  // Combined data loading effect
+  useEffect(() => {
+    const initData = async () => {
+        if (!userId) return;
 
-  const handleClientChange = (clientId: string) => {
-    form.setValue('clientId', clientId);
+        // 1. Fetch User (wait for it)
+        await fetchUserById(userId);
+        const user = useUserStore.getState().selectedUser;
+        
+        if (user) {
+            const adminData = user as any;
+            
+             // Helper to extract ID inside effect
+             const resolveId = (val: any) => {
+                if (!val) return '';
+                if (typeof val === 'string') return val;
+                return val._id || val.id || '';
+             };
+
+            const clientId = adminData.clientId || resolveId(adminData.client);
+            
+            // 2. Fetch Business Units (wait for it)
+            if (clientId) {
+                await fetchBusinessUnits(clientId);
+            }
+
+            // 3. Resolve other IDs
+            const rawIsdCode = adminData.isdCode || '';
+            const cleanIsdCode = rawIsdCode.replace(/^\+/, '');
+            
+            let countryId = adminData.countryId || resolveId(adminData.isdCodeCountry);
+
+            // If we have ISD code but no country ID, try to find the country
+            if (cleanIsdCode && !countryId && countries.length > 0) {
+                const matchedCountry = countries.find(c => c.isdCode === cleanIsdCode);
+                if (matchedCountry) {
+                    countryId = matchedCountry._id;
+                }
+            }
+
+            let roleId = resolveId(adminData.role);
+
+            // If roleId appears to be a name (not in roles list as ID), try to look it up
+            if (roles.length > 0 && roleId) {
+                const isId = roles.some(r => r._id === roleId);
+                if (!isId) {
+                    const roleByName = roles.find(r => r.name.toLowerCase() === roleId.toLowerCase());
+                    if (roleByName) {
+                        roleId = roleByName._id;
+                    }
+                }
+            }
+
+            const businessUnitId = adminData.businessUnitId || resolveId(adminData.businessUnit);
+
+            // 4. Reset form (using setTimeout to ensure render cycle)
+            setTimeout(() => {
+                form.reset({
+                    firstName: adminData.firstName || '',
+                    lastName: adminData.lastName || '',
+                    email: adminData.email || '',
+                    mobileNumber: adminData.mobileNumber || '',
+                    isdCode: cleanIsdCode,
+                    countryId: countryId || '',
+                    isdCodeCountryId: adminData.isdCodeCountryId || resolveId(adminData.isdCodeCountry) || countryId || '',
+                    roleId: roleId,
+                    status: typeof adminData.status === 'object' ? adminData.status.code : adminData.status || '',
+                    clientId: clientId,
+                    businessUnitId: businessUnitId,
+                    image: null,
+                });
+
+                 // Determine image
+                 if (adminData.image) {
+                    let imageUrl = '';
+                    if (typeof adminData.image === 'string') {
+                    imageUrl = adminData.image;
+                    } else if (typeof adminData.image === 'object' && adminData.image) {
+                        imageUrl = adminData.image.url || adminData.image.fileName || '';
+                    }
+                    if (imageUrl) {
+                        setImageFiles([{ dataURL: imageUrl }]);
+                    }
+                }
+                
+                // Ensure filteredCountries
+                if (filteredCountries.length === 0 && countries.length > 0) {
+                    useDataStore.getState().setFilteredCountries(countries);
+                }
+
+                setIsDataLoaded(true);
+            }, 0);
+        }
+    };
+
+    // Only run when userId changes (initial load or navigation)
+    // We depend on fetchUserById/fetchBusinessUnits which are stable from store
+    // We might need to ensure lists are loaded too, but lists loading effect runs in parallel.
+    // If lists arrive LATER than user, the IDs might be weird but `reset` sets values.
+    // `Select` components will display values when options appear (reactive).
+    // The critical part is `fetchBusinessUnits` which is specific to the user's client.
+    
+    // Check if we are ready to init
+    if (clients.length > 0 && roles.length > 0) {
+        initData();
+    }
+    
+  }, [userId, clients.length, roles.length]); 
+
+  // Removed separate effects for fetchUserById and populateForm to avoid race conditions
+
+
+  // Filter countries
+  useEffect(() => {
+    if (selectIsdOpen && countrySearch) {
+      filterCountries(countrySearch);
+    } else if (!countrySearch && countries.length > 0) {
+      useDataStore.getState().setFilteredCountries(countries);
+    }
+  }, [countrySearch, selectIsdOpen, countries, filterCountries]);
+
+
+  const handleClientChange = async (selectedClientId: string) => {
+    form.setValue('clientId', selectedClientId);
     form.setValue('businessUnitId', '');
-    fetchBusinessUnits(clientId);
+    if (selectedClientId) {
+      await fetchBusinessUnits(selectedClientId);
+    }
   };
 
   const handleCountryChange = (value: string) => {
     const [isdCode, countryId] = value.split('|');
     form.setValue('isdCode', isdCode);
     form.setValue('countryId', countryId);
+    form.setValue('isdCodeCountryId', countryId);
   };
 
-  const mutation = useMutation({
-    mutationFn: async (values: UserEditSchemaType) => {
-      const formData = new FormData();
+  const onSubmit = async (data: UserEditSchemaType) => {
+    const formData = new FormData();
+    const auth = getAuth();
+    const token = auth?.api_token || "";
 
-      formData.append('id', userId);
+    if (token) {
+        formData.append('token', token);
+    }
 
-      const formattedIsdCode = values.isdCode.startsWith('+')
-        ? values.isdCode.slice(1)
-        : values.isdCode;
-      const originalIsd = originalValues.isdCode.startsWith('+')
-        ? originalValues.isdCode.slice(1)
-        : originalValues.isdCode;
+    formData.append('id', userId);
+    
+    const formattedIsdCode = data.isdCode.startsWith('+')
+      ? data.isdCode.slice(1)
+      : data.isdCode;
 
-      // Email handling
-      if (values.email !== originalValues.email) {
-        formData.append('email', originalValues.email);
-        formData.append('newEmail', values.email);
-      } else {
-        formData.append('email', values.email);
-      }
+    // Ensure all required fields are string
+    formData.append('firstName', data.firstName);
+    formData.append('lastName', data.lastName);
+    formData.append('email', data.email);
+    formData.append('isdCode', formattedIsdCode);
+    formData.append('countryId', data.countryId);
+    formData.append('mobileNumber', data.mobileNumber);
+    
+    // Explicitly handle password update validation
+  
+    
+    formData.append('clientId', data.clientId);
+    formData.append('businessUnitId', data.businessUnitId);
+    formData.append('roleId', data.roleId);
+    formData.append('isdCodeCountryId', data.isdCodeCountryId);
+    formData.append('status', data.status);
 
-      // ISD Code handling
-      if (formattedIsdCode !== originalIsd) {
-        formData.append('isdCode', originalIsd);
-        formData.append('newIsdCode', formattedIsdCode);
-      } else {
-        formData.append('isdCode', formattedIsdCode);
-      }
+    if (imageFiles.length > 0 && imageFiles[0]?.file) {
+      formData.append('image', imageFiles[0].file);
+    }
 
-      // Country ID handling
-      if (values.countryId !== originalValues.countryId) {
-        formData.append('countryId', originalValues.countryId);
-        formData.append('newCountryId', values.countryId);
-      } else {
-        formData.append('countryId', values.countryId);
-      }
-
-      // Mobile Number handling
-      if (values.mobileNumber !== originalValues.mobileNumber) {
-        formData.append('mobileNumber', originalValues.mobileNumber);
-        formData.append('newMobileNumber', values.mobileNumber);
-      } else {
-        formData.append('mobileNumber', values.mobileNumber);
-      }
-
-      // Always send these
-      formData.append('firstName', values.firstName);
-      formData.append('lastName', values.lastName);
-      if (values.password) {
-        formData.append('password', values.password);
-      }
-      formData.append('clientId', values.clientId);
-      formData.append('businessUnitId', values.businessUnitId);
-      formData.append('role', values.role);
-      formData.append('status', values.status);
-
-      if (imageFiles.length > 0 && imageFiles[0]?.file) {
-        formData.append('image', imageFiles[0].file);
-      }
-
-      const response = await apiRequest<any>(
-        'POST',
-        API_ENDPOINTS.EDIT_ADMIN_USERS,
-        formData,
-        'multipart/form-data'
-      );
-
-      if (!response?.data?.success) {
-        const message = response?.data?.message || 'Failed to update user';
-        throw new Error(message);
-      }
-
-      return response.data;
-    },
-    onSuccess: () => {
-      toast.success('User updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['user-users'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-user', userId] });
+    const result = await updateUser(userId, formData);
+    
+    if (result.success) {
+      toast.success(result.message || 'User updated successfully');
       router.push('/users');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update user');
-    },
-  });
-
-  const onSubmit = (data: UserEditSchemaType) => {
-    mutation.mutate(data);
+    } else {
+      toast.error(result.message || 'Failed to update user');
+    }
   };
 
   const selectedCountry = filteredCountries.find(
     (c) => c.isdCode === form.watch('isdCode') && c._id === form.watch('countryId')
   );
 
-  if (dataLoading) {
+  const isLoading = usersLoading || !isDataLoaded;
+
+  if (isLoading && !selectedUser) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <LoaderCircleIcon className="w-8 h-8 animate-spin" />
@@ -347,10 +360,8 @@ const UserEditForm = () => {
 
   return (
     <div className="grid gap-5 lg:gap-7.5">
-      <div className="mx-5 card p-3 border-b-2">
-        <h3 className="card-title">Edit Admin User</h3>
-      </div>
-      <div className="mx-5 card card-body grid gap-y-5">
+     
+      <div className="border mt-5 grid gap-5 lg:gap-9.5 card  rounded-xl p-8">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             {/* Profile Image Upload */}
@@ -404,72 +415,66 @@ const UserEditForm = () => {
               </div>
             </div>
 
-            {/* Client */}
-            <FormField
-              control={form.control}
-              name="clientId"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="w-56">Client</FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <Select
-                        value={field.value || ''}
-                        onValueChange={handleClientChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Client" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {clients.map((client) => (
-                            <SelectItem key={client.id} value={client.id}>
-                              {client.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </div>
-                  </div>
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {/* Client */}
+              <FormField
+                control={form.control}
+                name="clientId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Client</FormLabel>
+                    <Select
+                      value={field.value || ''}
+                      onValueChange={handleClientChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Client" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {clients.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            {/* Business Unit */}
-            <FormField
-              control={form.control}
-              name="businessUnitId"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
-                    <FormLabel className="w-56">Business Unit</FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <Select
-                        value={field.value || ''}
-                        onValueChange={field.onChange}
-                        disabled={!form.watch('clientId')}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Business Unit" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {businessUnits.map((unit) => (
-                            <SelectItem key={unit.id} value={unit.id}>
-                              {unit.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </div>
-                  </div>
-                </FormItem>
-              )}
-            />
+              {/* Business Unit */}
+              <FormField
+                control={form.control}
+                name="businessUnitId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Business Unit</FormLabel>
+                    <Select
+                      value={field.value || ''}
+                      onValueChange={field.onChange}
+                      disabled={!form.watch('clientId')}
+                      key={`${field.value}-${businessUnits.length}`} // Force re-render when list or value changes
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Business Unit" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {businessUnits.map((unit) => (
+                          <SelectItem key={unit.id} value={unit.id}>
+                            {unit.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
             {/* First Name */}
             <FormField
@@ -477,26 +482,22 @@ const UserEditForm = () => {
               name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="w-56">
-                      First Name <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <FormControl>
-                        <Input
-                          placeholder="First Name"
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (/^[a-zA-Z\s]*$/.test(value)) {
-                              field.onChange(value);
-                            }
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </div>
-                  </div>
+                  <FormLabel>
+                    First Name <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="First Name"
+                      {...field}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^[a-zA-Z\s]*$/.test(value)) {
+                          field.onChange(value);
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -507,26 +508,22 @@ const UserEditForm = () => {
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="w-56">
-                      Last Name <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <FormControl>
-                        <Input
-                          placeholder="Last Name"
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (/^[a-zA-Z\s]*$/.test(value)) {
-                              field.onChange(value);
-                            }
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </div>
-                  </div>
+                  <FormLabel>
+                    Last Name <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Last Name"
+                      {...field}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^[a-zA-Z\s]*$/.test(value)) {
+                          field.onChange(value);
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -537,49 +534,41 @@ const UserEditForm = () => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="w-56">
-                      Email <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="Email"
-                          autoComplete="off"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </div>
-                  </div>
+                  <FormLabel>
+                    Email <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="Email"
+                      autoComplete="off"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
 
             {/* Password */}
-            <FormField
+            {/* <FormField
               control={form.control}
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="w-56">Password</FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Password (only if changing)"
-                          autoComplete="new-password"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </div>
-                  </div>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="Password (only if changing)"
+                      autoComplete="new-password"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
-            />
+            /> */}
 
             {/* Mobile Number */}
             <FormField
@@ -587,80 +576,87 @@ const UserEditForm = () => {
               name="mobileNumber"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="w-56">
-                      Mobile Number <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <div className="w-full flex gap-2">
-                        <Select
-                          value={`${form.watch('isdCode')}|${form.watch('countryId')}`}
-                          onOpenChange={(open) => {
-                            setSelectIsdOpen(open);
-                            if (!open) setCountrySearch('');
-                          }}
-                          onValueChange={handleCountryChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-40">
-                              <SelectValue>
-                                {selectedCountry ? (
-                                  <div className="flex items-center gap-2">
-                                    {selectedCountry.flag && (
-                                      <img
-                                        src={selectedCountry.flag}
-                                        alt="flag"
-                                        className="w-5 h-5 object-contain rounded-sm"
-                                      />
-                                    )}
-                                    <span>(+{selectedCountry.isdCode})</span>
-                                  </div>
-                                ) : (
-                                  'ISD'
+                  <FormLabel>
+                    Mobile Number <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <div className="w-full flex gap-2">
+                    <Select
+                      value={`${form.watch('isdCode')}|${form.watch('countryId')}`}
+                      onOpenChange={(open) => {
+                        setSelectIsdOpen(open);
+                        if (!open) {
+                          setCountrySearch('');
+                          useDataStore.getState().setFilteredCountries(countries);
+                        }
+                      }}
+                      onValueChange={handleCountryChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-40">
+                          <SelectValue>
+                            {selectedCountry ? (
+                              <div className="flex items-center gap-2">
+                                {selectedCountry.flag && (
+                                  <img
+                                    src={selectedCountry.flag}
+                                    alt="flag"
+                                    className="w-5 h-5 object-contain rounded-sm"
+                                  />
                                 )}
-                              </SelectValue>
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-h-60 overflow-y-auto">
-                            <div className="p-2 sticky top-0 bg-white z-10">
-                              <Input
-                                type="text"
-                                placeholder="Search..."
-                                value={countrySearch}
-                                onChange={(e) => setCountrySearch(e.target.value)}
-                                className="w-full"
-                              />
-                            </div>
-                            {filteredCountries.map((country) => (
-                              <SelectItem
-                                key={country._id}
-                                value={`${country.isdCode}|${country._id}`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  {country.flag && (
-                                    <img
-                                      src={country.flag}
-                                      alt={country.name}
-                                      className="w-5 h-5 object-cover rounded-sm"
-                                    />
-                                  )}
-                                  <span>(+{country.isdCode})</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormControl>
+                                <span>(+{selectedCountry.isdCode})</span>
+                              </div>
+                            ) : (
+                              'ISD'
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="max-h-60 overflow-y-auto">
+                        <div className="p-2 sticky top-0 bg-white z-10">
                           <Input
                             type="text"
-                            placeholder="Enter your mobile number"
-                            {...field}
+                            placeholder="Search..."
+                            value={countrySearch}
+                            onChange={(e) => {
+                              const search = e.target.value;
+                              setCountrySearch(search);
+                              if (search) {
+                                filterCountries(search);
+                              } else {
+                                useDataStore.getState().setFilteredCountries(countries);
+                              }
+                            }}
+                            className="w-full"
                           />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </div>
+                        </div>
+                        {filteredCountries.map((country) => (
+                          <SelectItem
+                            key={country._id}
+                            value={`${country.isdCode}|${country._id}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {country.flag && (
+                                <img
+                                  src={country.flag}
+                                  alt={country.name}
+                                  className="w-5 h-5 object-cover rounded-sm"
+                                />
+                              )}
+                              <span>(+{country.isdCode})</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder="Enter your mobile number"
+                        {...field}
+                      />
+                    </FormControl>
                   </div>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -668,28 +664,27 @@ const UserEditForm = () => {
             {/* Role */}
             <FormField
               control={form.control}
-              name="role"
+              name="roleId"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="min-w-[140px] sm:w-56">
-                      Role <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <Select value={field.value || ''} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select Role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="superadmin">Super Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </div>
-                  </div>
+                  <FormLabel>
+                    Role <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select value={field.value || ''} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Role" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {roles.map((role) => (
+                        <SelectItem key={role._id} value={role._id}>
+                          {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -700,44 +695,53 @@ const UserEditForm = () => {
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="min-w-[140px] sm:w-56">
-                      Status <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <Select value={field.value || ''} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select Status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="suspended">Suspended</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </div>
-                  </div>
+                  <FormLabel>
+                    Status <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select value={field.value || ''} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="suspended">Suspended</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
+            </div>
 
             <div className="text-end">
+                <Button
+                              type="button"
+                              disabled={isLoading || form.formState.isSubmitting}
+                              variant="outline"
+                              // className="btn ms-2 bg-white-600 hover:bg-black-100 text-black shadow-md border-gray-300 border-solid border-2"
+                              onClick={() => router.back()}
+                            >
+                             
+                            Cancel
+                            
+                </Button>
+              
               <Button
                 type="submit"
-                disabled={mutation.isPending || form.formState.isSubmitting}
-                className="btn btn-primary"
+                disabled={usersLoading || form.formState.isSubmitting}
+                className="btn btn-primary ms-2"
               >
-                {mutation.isPending || form.formState.isSubmitting ? (
+                {(usersLoading || form.formState.isSubmitting) ? (
                   <div className="flex items-center gap-2">
                     <LoaderCircleIcon className="w-4 h-4 animate-spin" />
                     <span>Submitting...</span>
                   </div>
                 ) : (
-                  'Save Changes'
+                  'Submit'
                 )}
               </Button>
             </div>

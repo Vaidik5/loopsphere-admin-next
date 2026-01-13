@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState ,useEffect} from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -36,15 +36,82 @@ import { User } from '@/app/models/user';
 import UserDeleteConfirm from './user-delete-confirm';
 
 
-// const {
-//   deleteUser
-// } = useUserStore();
+interface DataGridToolbarProps {
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  setPagination: React.Dispatch<React.SetStateAction<PaginationState>>;
+  isLoading: boolean;
+  onAddUser: () => void;
+}
+
+const DataGridToolbar = ({
+  searchQuery,
+  setSearchQuery,
+  setPagination,
+  isLoading,
+  onAddUser,
+}: DataGridToolbarProps) => {
+  const [inputValue, setInputValue] = useState(searchQuery);
+
+  // Debounce logic
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (inputValue !== searchQuery) {
+        setSearchQuery(inputValue);
+        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [inputValue, searchQuery, setSearchQuery, setPagination]);
+
+  return (
+    <CardHeader className="flex-col flex-wrap sm:flex-row items-stretch sm:items-center py-5">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div className="relative">
+          <Search className="size-4 text-muted-foreground absolute start-3 top-1/2 -translate-y-1/2" />
+          <Input
+            placeholder="Search users"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            className="ps-9 w-full sm:40 md:w-64"
+          />
+          {inputValue.length > 0 && (
+            <Button
+              mode="icon"
+              variant="dim"
+              className="absolute end-1.5 top-1/2 -translate-y-1/2 h-6 w-6"
+              onClick={() => {
+                setInputValue('');
+              }}
+            >
+              <X />
+            </Button>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center justify-end">
+        <Button
+          disabled={isLoading && true}
+          onClick={onAddUser}
+        >
+          <Plus />
+          Add Admin User
+        </Button>
+      </div>
+    </CardHeader>
+  );
+};
+
+
 
 const UserList = () => {
   const router = useRouter();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
-    pageSize: 10,
+    pageSize: 5,
   });
   const [sorting, setSorting] = useState<SortingState>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,35 +121,71 @@ const UserList = () => {
     pageIndex,
     pageSize,
     searchQuery,
+    sorting,
   }: DataGridApiFetchParams): Promise<DataGridApiResponse<User>> => {
-    const params = new URLSearchParams({
-      page: String(pageIndex + 1),
-      limit: String(pageSize),
-      ...(searchQuery ? { query: searchQuery } : {}),
-    });
+    const params = new URLSearchParams();
+    params.set('page', String(pageIndex + 1));
+    params.set('limit', String(pageSize));
 
-    const response = await apiRequest<any>(
-      'GET',
-      `${API_ENDPOINTS.GET_ALL_ADMIN_USERS_LIST}?${params.toString()}`,
-    );
-
-    if (response.status !== 200) {
-      throw new Error(
-        'Oops! Something didn’t go as planned. Please try again in a moment.',
-      );
+    if (searchQuery) {
+      params.set('search', searchQuery);
     }
 
-    const apiData = response.data;
+    if (sorting && sorting.length > 0) {
+      // Map 'name' to 'firstName' if needed, assuming backend sorts by firstName
+      const sortField = sorting[0].id === 'name' ? 'name' : sorting[0].id;
+      params.set('sort', sortField);
+      params.set('order', sorting[0].desc ? 'desc' : 'asc');
+    }
 
-    // Map the API response to DataGridApiResponse
-    return {
-      data: apiData.data || [],
-      empty: !apiData.data || apiData.data.length === 0,
-      pagination: {
-        total: apiData.pagination?.totalRecords || 0,
-        page: apiData.pagination?.currentPage || 1,
-      },
-    };
+    try {
+      const response = await apiRequest<any>(
+        'GET',
+        `${API_ENDPOINTS.GET_ALL_ADMIN_USERS_LIST}?${params.toString()}`,
+      );
+
+      if (response.status === 404) {
+        return {
+          data: [],
+          empty: true,
+          pagination: {
+            total: 0,
+            page: 1,
+          },
+        };
+      }
+
+      // if (response.status !== 200) {
+      //   throw new Error(
+      //     'Oops! Something didn’t go as planned. Please try again in a moment.',
+      //   );
+      // }
+
+      const apiData = response.data;
+
+      // Map the API response to DataGridApiResponse
+      return {
+        data: apiData.data || [],
+        empty: !apiData.data || apiData.data.length === 0,
+        pagination: {
+          total: apiData.pagination?.totalRecords || 0,
+          page: apiData.pagination?.currentPage || 1,
+        },
+      };
+    } catch (error: any) {
+      // Handle 404 explicitly if it throws
+      if (error.response && error.response.status === 404) {
+        return {
+          data: [],
+          empty: true,
+          pagination: {
+            total: 0,
+            page: 1,
+          },
+        };
+      }
+      throw error;
+    }
   };
 
   // Users query
@@ -95,9 +198,9 @@ const UserList = () => {
         sorting,
         searchQuery,
       }),
-    staleTime: Infinity,
+    staleTime: 0,
     gcTime: 1000 * 60 * 60, // 60 minutes
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     refetchOnReconnect: false,
     retry: 1,
   });
@@ -107,10 +210,8 @@ const UserList = () => {
   // so the UI respects `pageSize` selection. If the API provides total
   // records in pagination, prefer that for page count.
   const tableData = useMemo(() => {
-    const rows = data?.data || [];
-    const start = pagination.pageIndex * pagination.pageSize;
-    return rows.slice(start, start + pagination.pageSize);
-  }, [data, pagination]);
+    return data?.data || [];
+  }, [data]);
 
   const totalRecords = data?.pagination?.total ?? data?.data?.length ?? 0;
 
@@ -159,9 +260,9 @@ const UserList = () => {
           if (
             user.image &&
             typeof user.image === 'object' &&
-            user.image.fileName
+            user.image.url
           ) {
-            avatarUrl = user.image.fileName;
+            avatarUrl = user.image.url;
           } else if (typeof user.image === 'string') {
             avatarUrl = user.image;
           }
@@ -171,7 +272,7 @@ const UserList = () => {
           return (
             <div className="flex items-center gap-3">
               <Avatar className="size-8">
-                {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
+                {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} className='rounded-full  object-contain border-2 border-gray shadow-md cursor-pointer' />}
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <div className="font-medium text-sm">{displayName}</div>
@@ -193,28 +294,7 @@ const UserList = () => {
         enableSorting: true,
         enableHiding: false,
       },
-      {
-        accessorKey: 'email',
-        id: 'email',
-        header: ({ column }) => (
-          <DataGridColumnHeader
-            title="Email"
-            visibility={true}
-            column={column}
-          />
-        ),
-        cell: ({ row }) => {
-          return <div className="text-sm">{row.original.email}</div>;
-        },
-        size: 250,
-        meta: {
-          headerTitle: 'Email',
-          skeleton: <Skeleton className="w-28 h-7" />,
-        },
-        enableSorting: true,
-        enableHiding: true,
-      },
-      {
+       {
         accessorKey: 'mobileNumber',
         id: 'mobileNumber',
         header: ({ column }) => (
@@ -245,6 +325,112 @@ const UserList = () => {
         enableSorting: true,
         enableHiding: true,
       },
+      {
+        accessorKey: 'email',
+        id: 'email',
+        header: ({ column }) => (
+          <DataGridColumnHeader
+            title="Email"
+            visibility={true}
+            column={column}
+          />
+        ),
+        cell: ({ row }) => {
+          return <div className="text-sm">{row.original.email}</div>;
+        },
+        size: 250,
+        meta: {
+          headerTitle: 'Email',
+          skeleton: <Skeleton className="w-28 h-7" />,
+        },
+        enableSorting: true,
+        enableHiding: true,
+      },
+      
+      {
+        accessorKey: 'client',
+        id: 'client',
+        header: ({ column }) => (
+          <DataGridColumnHeader
+            title="Client Name"
+            visibility={true}
+            column={column}
+          />
+        ),
+        cell: ({ row }) => {
+          const user = row.original;
+          const client = user.client;
+          let clientName = '-';
+          if (client) {
+            const firstName = client.firstName || '';
+            const lastName = client.lastName || '';
+            clientName = `${firstName} ${lastName}`.trim() || '-';
+          }
+          return <div className="text-sm">{clientName}</div>;
+        },
+        size: 200,
+        meta: {
+          headerTitle: 'Client Name',
+          skeleton: <Skeleton className="w-28 h-7" />,
+        },
+        enableSorting: true,
+        enableHiding: true,
+      },
+      {
+        accessorKey: 'businessUnit',
+        id: 'businessUnit',
+        header: ({ column }) => (
+          <DataGridColumnHeader
+            title="Business Unit"
+            visibility={true}
+            column={column}
+          />
+        ),
+        cell: ({ row }) => {
+          const user = row.original;
+          const bu = user.businessUnit;
+          const buName = bu && bu.name ? bu.name : '-';
+          return <div className="text-sm">{buName}</div>;
+        },
+        size: 200,
+        meta: {
+          headerTitle: 'Business Unit',
+          skeleton: <Skeleton className="w-28 h-7" />,
+        },
+        enableSorting: true,
+        enableHiding: true,
+      },
+      {
+        accessorKey: 'lastAccessTime',
+        id: 'lastAccessTime',
+        header: ({ column }) => (
+          <DataGridColumnHeader title="Last Active" column={column} />
+        ),
+        cell: ({ row }) => {
+          const value = row.original.lastAccessTime;
+          if (!value) return <span className="text-foreground font-normal">-</span>;
+          const date = new Date(value);
+          const formattedDate = date.toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          });
+          const formattedTime = date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+          });
+          return (
+            <span className="text-foreground  font-normal">
+              {formattedDate}&nbsp;{formattedTime}
+            </span>
+          );
+        },
+        enableSorting: true,
+        size: 220,
+      },
+     
       {
         accessorKey: 'status',
         id: 'status',
@@ -307,24 +493,30 @@ const UserList = () => {
           const user = row.original;
           const userId = user._id || user.id;
           return (
-            <div className="flex justify-between">
-              <span
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   const id = userId;
                   if (id) router.push(`/user/edit/${id}`);
                 }}
+                className="p-1 cursor-pointer"
+                aria-label="Edit user"
               >
-                <SquarePen className="text-blue-500" />
-              </span>
-              <span
+                <SquarePen className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (userId) openDelete(String(userId));
                 }}
+                className="p-1 cursor-pointer"
+                aria-label="Delete user"
               >
-                <Trash2 className="text-red-500 cursor-pointer" />
-              </span>
+                <Trash2 className="w-4 h-4 text-muted-foreground" />
+              </button>
             </div>
           );
         },
@@ -365,55 +557,6 @@ const UserList = () => {
     manualSorting: true,
     manualFiltering: true,
   });
-
-  const DataGridToolbar = () => {
-    const [inputValue, setInputValue] = useState(searchQuery);
-
-    const handleSearch = () => {
-      setSearchQuery(inputValue);
-      setPagination({ ...pagination, pageIndex: 0 });
-    };
-
-    return (
-      <CardHeader className="flex-col flex-wrap sm:flex-row items-stretch sm:items-center py-5">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-          <div className="relative">
-            <Search className="size-4 text-muted-foreground absolute start-3 top-1/2 -translate-y-1/2" />
-            <Input
-              placeholder="Search users"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              disabled={isLoading}
-              className="ps-9 w-full sm:40 md:w-64"
-            />
-            {searchQuery.length > 0 && (
-              <Button
-                mode="icon"
-                variant="dim"
-                className="absolute end-1.5 top-1/2 -translate-y-1/2 h-6 w-6"
-                onClick={() => setSearchQuery('')}
-              >
-                <X />
-              </Button>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center justify-end">
-          <Button
-            disabled={isLoading && true}
-            onClick={() => {
-              router.push('/user/add');
-            }}
-          >
-            <Plus />
-            Add Admin User
-          </Button>
-        </div>
-      </CardHeader>
-    );
-  };
-
   return (
     <>
       <UserDeleteConfirm open={deleteOpen} onClose={closeDelete} userId={selectedUserId} />
@@ -421,19 +564,24 @@ const UserList = () => {
         table={table}
         recordCount={data?.pagination.total || 0}
         isLoading={isLoading}
-        onRowClick={handleRowClick}
         tableLayout={{
           columnsResizable: true,
-          columnsPinnable: true,
-          columnsMovable: true,
-          columnsVisibility: true,
+          columnsPinnable: false,
+          columnsMovable: false,
+          columnsVisibility: false,
         }}
         tableClassNames={{
           edgeCell: 'px-5',
         }}
       >
         <Card>
-          <DataGridToolbar />
+              <DataGridToolbar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            setPagination={setPagination}
+            isLoading={isLoading}
+            onAddUser={() => router.push('/user/add')}
+          />
           <CardTable>
             <ScrollArea>
               <DataGridTable />

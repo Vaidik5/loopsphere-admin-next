@@ -1,3 +1,7 @@
+import { v4 as uuidv4 } from 'uuid';
+import { getData, setData, removeData } from './storage-helper';
+const DEVICE_ID_KEY = "app_device_id";
+
 export const throttle = (
   func: (...args: unknown[]) => void,
   limit: number,
@@ -114,4 +118,140 @@ export function formatDateTime(input: Date | string | number): string {
     minute: 'numeric',
     hour12: true,
   });
+}
+
+export const getDeviceId = (): string => {
+  let deviceId = getData(DEVICE_ID_KEY) as string | undefined;
+ 
+  if (!deviceId) {
+    deviceId = uuidv4();
+    setData(DEVICE_ID_KEY, deviceId);
+  }
+ 
+  return deviceId;
+};
+ 
+export const resetDeviceId = (): void => {
+  removeData(DEVICE_ID_KEY);
+};
+
+export function getDeviceName(): string | undefined {
+  if (typeof navigator === 'undefined') return undefined;
+  // Use User-Agent Client Hints when available
+  // @ts-ignore
+  if ((navigator as any).userAgentData && (navigator as any).userAgentData.brands) {
+    // @ts-ignore
+    return (navigator as any).userAgentData.brands.map((b: any) => b.brand).join(' ');
+  }
+  return navigator.platform || navigator.userAgent || undefined;
+}
+
+export function getDeviceType(): 'mobile' | 'web' {
+  if (typeof navigator === 'undefined') return 'web';
+  const ua = navigator.userAgent || '';
+  return /Mobi|Android|iPhone|iPad/.test(ua) ? 'mobile' : 'web';
+}
+
+export function getOSVersion(): string | undefined {
+  if (typeof navigator === 'undefined') return undefined;
+  const ua = navigator.userAgent || '';
+  const match = ua.match(/(Android)\s?([0-9\.]+)|iPhone OS\s?([0-9_]+)|CPU\s+OS\s?([0-9_]+)|Windows NT\s?([0-9\.]+)|Mac OS X\s?([0-9_\.]+)/i);
+  if (!match) return undefined;
+  const ver = match[2] || match[3] || match[4] || match[5] || match[6];
+  return ver ? ver.replace(/_/g, '.') : undefined;
+}
+
+export function getPushToken(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    // Placeholder for push token extraction/registration
+    return 'push-ex-token';
+  } catch (e) {
+    return undefined;
+  }
+}
+
+export async function getLocation(): Promise<string | undefined> {
+  if (typeof window === 'undefined') return undefined;
+
+  const tryGeolocation = () =>
+    new Promise<string | undefined>((resolve) => {
+      if (!navigator.geolocation) return resolve(undefined);
+      const onSuccess = (pos: GeolocationPosition) => {
+        const { latitude, longitude } = pos.coords;
+        resolve(`${latitude},${longitude}`);
+      };
+      const onError = () => resolve(undefined);
+      navigator.geolocation.getCurrentPosition(onSuccess, onError, { timeout: 5000 });
+    });
+
+  try {
+    const geo = await tryGeolocation();
+    if (geo) {
+      const coordsMatch = geo.match(/^(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)$/);
+      if (coordsMatch) {
+        const lat = coordsMatch[1];
+        const lon = coordsMatch[2];
+        try {
+          const nomRes = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`,
+            {
+              headers: {
+                'User-Agent': 'LoopSphereAdmin/1.0 (contact@loopbots.com)',
+              },
+            },
+          );
+          if (nomRes.ok) {
+            const nomData = await nomRes.json();
+            if (nomData.display_name) return nomData.display_name as string;
+            const addr = nomData.address || {};
+            const parts = [addr.city || addr.town || addr.village || addr.county, addr.state, addr.country].filter(Boolean);
+            if (parts.length) return parts.join(', ');
+          }
+        } catch (e) {
+          // ignore and fallback to raw coords
+        }
+        return `${lat},${lon}`;
+      }
+      return geo;
+    }
+
+    try {
+      const res = await fetch('https://ipapi.co/json/');
+      if (!res.ok) return undefined;
+      const data = await res.json();
+      const city = data.city;
+      const country = data.country_name || data.country;
+      if (city && country) return `${city}, ${country}`;
+      if (data.latitude && data.longitude) {
+        const lat = data.latitude;
+        const lon = data.longitude;
+        try {
+          const nomRes = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`,
+            {
+              headers: {
+                'User-Agent': 'LoopSphereAdmin/1.0 (contact@loopbots.com)',
+              },
+            },
+          );
+          if (nomRes.ok) {
+            const nomData = await nomRes.json();
+            if (nomData.display_name) return nomData.display_name as string;
+            const addr = nomData.address || {};
+            const parts = [addr.city || addr.town || addr.village || addr.county, addr.state, addr.country].filter(Boolean);
+            if (parts.length) return parts.join(', ');
+          }
+        } catch (e) {
+          // ignore
+        }
+        return `${lat},${lon}`;
+      }
+    } catch (e) {
+      return undefined;
+    }
+  } catch (e) {
+    return undefined;
+  }
+  return undefined;
 }

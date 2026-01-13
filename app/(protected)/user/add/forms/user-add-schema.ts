@@ -12,28 +12,31 @@ export const UserAddSchema = z.object({
     .email({ message: 'Valid email is required.' })
     .refine((val) => !uppercaseRegex.test(val), {
       message: 'Email must not contain uppercase letters.',
+    }).refine((val) => emailRegex.test(val), {
+      message: 'Email format is invalid.',
     }),
-  password: z
-    .string()
-    .min(1, { message: 'Password is required.' })
-    .min(6, { message: 'Password must be at least 6 characters.' }),
   mobileNumber: z
     .string()
     .min(1, { message: 'Mobile number is required.' })
     .regex(/^[0-9]{6,15}$/, {
       message: 'Mobile number must be between 6 to 15 digits.',
     }),
+  password: z
+    .string()
+    .min(1, { message: 'Password is required.' })
+    .min(6, { message: 'Password must be at least 6 characters.' }),
+  clientId: z.string().min(1, { message: 'Client is required.' }),
+  businessUnitId: z.string().min(1, { message: 'Business Unit is required.' }),
+  roleId: z.string().min(1, { message: 'Role is required.' }),
   isdCode: z.string().min(1, { message: 'ISD Code is required.' }),
   countryId: z.string().min(1, { message: 'Country is required.' }),
-  role: z.string().min(1, { message: 'Role is required.' }),
   status: z
     .string()
     .min(1, { message: 'Status is required.' })
-    .refine((val) => ['active', 'inactive', 'pending', 'suspended'].includes(val), {
+    .refine((val) => ['active', 'inactive'].includes(val), {
       message: 'Please select a valid status.',
     }),
-  clientId: z.string().min(1, { message: 'Client is required.' }),
-  businessUnitId: z.string().min(1, { message: 'Business Unit is required.' }),
+  isdCodeCountryId : z.string().min(1, { message: 'ISD Code Country is required.' }),
   image: z.any().optional(),
 });
 

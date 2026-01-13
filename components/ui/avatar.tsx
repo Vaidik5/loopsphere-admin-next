@@ -29,7 +29,7 @@ function Avatar({
   return (
     <AvatarPrimitive.Root
       data-slot="avatar"
-      className={cn('relative flex shrink-0 size-10', className)}
+      className={cn('relative flex shrink-0 size-10 overflow-hidden rounded-full', className)}
       {...props}
     />
   );
@@ -40,13 +40,11 @@ function AvatarImage({
   ...props
 }: React.ComponentProps<typeof AvatarPrimitive.Image>) {
   return (
-    <div className={cn('relative overflow-hidden rounded-full', className)}>
-      <AvatarPrimitive.Image
-        data-slot="avatar-image"
-        className={cn('aspect-square h-full w-full')}
-        {...props}
-      />
-    </div>
+    <AvatarPrimitive.Image
+      data-slot="avatar-image"
+      className={cn('aspect-square h-full w-full', className)}
+      {...props}
+    />
   );
 }
 

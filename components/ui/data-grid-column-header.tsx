@@ -198,7 +198,9 @@ function DataGridColumnHeader<TData, TValue>({
             )}
 
             {(filter || column.getCanSort()) &&
-              (column.getCanSort() || column.getCanPin() || visibility) && (
+              ((props.tableLayout?.columnsPinnable && column.getCanPin()) ||
+                props.tableLayout?.columnsMovable ||
+                (props.tableLayout?.columnsVisibility && visibility)) && (
                 <DropdownMenuSeparator />
               )}
 
@@ -305,7 +307,8 @@ function DataGridColumnHeader<TData, TValue>({
     props.tableLayout?.columnsMovable ||
     (props.tableLayout?.columnsVisibility && visibility) ||
     (props.tableLayout?.columnsPinnable && column.getCanPin()) ||
-    filter
+    filter ||
+    column.getCanSort()
   ) {
     return headerControls();
   }

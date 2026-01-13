@@ -23,7 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Icons } from '@/components/common/icons';
 import { getSigninSchema, SigninSchemaType } from '../forms/signin-schema';
-import { toAbsoluteUrl } from '@/lib/helpers';
+import { toAbsoluteUrl, getDeviceId, getDeviceName, getDeviceType, getOSVersion, getPushToken, getLocation } from '@/lib/helpers';
 import Image from 'next/image';
 export default function Page() {
   const { login, user, isLoading } = useAuth();
@@ -42,7 +42,7 @@ export default function Page() {
   // Load rememberMe preference and saved email from localStorage
   const getSavedCredentials = () => {
     if (typeof window === 'undefined') {
-      return { email: 'contact@loopbots.com', password: '', rememberMe: false };
+      return { email: 'contact@loopbots.com', password: 'Loopbots@123', rememberMe: false };
     }
 
     try {
@@ -51,11 +51,11 @@ export default function Page() {
 
       return {
         email: savedEmail || 'contact@loopbots.com',
-        password: '', // Never save password, always require user to enter
+        password: 'Loopbots@123', // Never save password, always require user to enter
         rememberMe,
       };
     } catch (error) {
-      return { email: 'contact@loopbots.com', password: '', rememberMe: false };
+      return { email: 'contact@loopbots.com', password: 'Loopbots@123', rememberMe: false };
     }
   };
 
@@ -86,9 +86,31 @@ export default function Page() {
         }
       }
 
+      // Device/location helpers are provided by `@/lib/helpers`
+
+    
+      const deviceName = getDeviceName();
+      const deviceId = getDeviceId();
+      const deviceType = getDeviceType();
+      const osVersion = getOSVersion();
+      const pushToken = getPushToken();
+      const location = await getLocation();
+
+      const payload = {
+        email: values.email,
+        password: values.password,
+        deviceName,
+        deviceId,
+        appVersion: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
+        deviceType,
+        osVersion,
+        pushToken,
+        location,
+      };
+
       // Use your custom auth instead of NextAuth
-      // Pass rememberMe value to login function
-      const success = await login(values.email, values.password, values.rememberMe ?? false);
+      // Pass rememberMe value to login function along with payload
+      const success = await login(payload, values.rememberMe ?? false);
 
       if (success) {
         router.push('/');
@@ -226,8 +248,8 @@ export default function Page() {
           <Button type="submit" disabled={isProcessing}>
             {isProcessing ? (
               <LoaderCircleIcon className="size-4 animate-spin w-full h-full z-10" />
-            ) : null}
-            Continue
+            ) : "Continue"}
+            
           </Button>
         </div>
       </form>

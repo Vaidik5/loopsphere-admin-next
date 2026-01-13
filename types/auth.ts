@@ -15,18 +15,25 @@ export interface UserImage {
   fileName: string;
   width: number;
   height: number;
+  url?: string;
   aspectRatio: string;
-  mimeType: string;
+  mimeType?: string;
 }
 
 export interface UserModel {
-  _id: string;
+  _id?: string;
+  id?: string;
   firstName: string;
   lastName: string;
   email: string;
-  role: string;
+  mobileNumber?: string;
+  isdCode?: string;
   image?: UserImage;
-  // Add other user fields as necessary based on the API response
+  status?: Status;
+  isdCodeCountry?: ISDCodeCountry;
+  role?: Role;
+  client?: Client;
+  businessUnit?: BusinessUnit;
 }
 
 export interface UpdateModelRequest {
@@ -61,6 +68,32 @@ export interface ImageData {
   height: number;
   aspectRatio: string;
   mimeType: string;
+}
+
+export interface Status {
+  code: string;
+  label: string;
+}
+
+export interface ISDCodeCountry {
+  id: string;
+  name: string;
+}
+
+export interface Role {
+  id: string;
+  name: string;
+}
+
+export interface Client {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+export interface BusinessUnit {
+  id: string;
+  name?: string;
 }
 
 export interface UpdateModel {

@@ -66,7 +66,7 @@ export const getAuth = (): AuthModel | undefined => {
   return undefined;
 };
 
-export const setAuth = (auth: AuthModel, rememberMe: boolean = false) => {
+export const setAuth = (auth: AuthModel, rememberMe: boolean = false, loginPayload?: Record<string, any>) => {
   try {
     // Try to find the tokens in various likely locations based on AuthModel or raw API response
     const accessToken =
@@ -95,6 +95,16 @@ export const setAuth = (auth: AuthModel, rememberMe: boolean = false) => {
         }
       } catch (e) {
         console.error('Failed to store rememberMe preference', e);
+      }
+    }
+
+    // Store the full login payload in sessionStorage so it's available for this browser session
+    // This keeps device info and other metadata available without creating persistent storage
+    if (typeof window !== 'undefined' && loginPayload) {
+      try {
+        sessionStorage.setItem('loopsphere-login-payload', JSON.stringify(loginPayload));
+      } catch (e) {
+        console.error('Failed to store login payload in sessionStorage', e);
       }
     }
   } catch (error) {

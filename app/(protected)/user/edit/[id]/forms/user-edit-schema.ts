@@ -22,7 +22,8 @@ export const UserEditSchema = z.object({
     }),
   isdCode: z.string().min(1, { message: 'ISD Code is required.' }),
   countryId: z.string().min(1, { message: 'Country is required.' }),
-  role: z.string().min(1, { message: 'Role is required.' }),
+  isdCodeCountryId: z.string().min(1, { message: 'ISD Code Country is required.' }),
+  roleId: z.string().min(1, { message: 'Role is required.' }),
   status: z
     .string()
     .min(1, { message: 'Status is required.' })

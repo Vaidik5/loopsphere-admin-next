@@ -49,8 +49,10 @@ export function DropdownMenuUser({ trigger }: { trigger: ReactNode }) {
             <img
               className="w-9 h-9 rounded-full border border-border"
               src={
-                user?.avatar?.fileName ||
-                toAbsoluteUrl('/media/avatars/300-1.jpg')
+                typeof user?.avatar === 'string'
+                  ? user.avatar
+                  : user?.avatar?.fileName ||
+                    toAbsoluteUrl('/media/avatars/300-1.jpg')
               }
               alt="User avatar"
             />

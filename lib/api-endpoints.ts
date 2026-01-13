@@ -1,5 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://10.32.81.103:3000/api'; // Fallback or from env
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.188:3000/api'; // Fallback or from env
 export const API_ENDPOINTS = {
   ADMIN_LOGIN: `${API_URL}/admin/login`,
   ADMIN_REGISTER: `${API_URL}/register`,
@@ -122,6 +121,7 @@ export const API_ENDPOINTS = {
   GET_BY_BUSINESS_UNIT_ID: `${API_URL}/business`,
   DELETE_BUSINESS_UNIT: `${API_URL}/business/delete`,
   BUSINESS_UNIT_PROFILE: `${API_URL}/business/profile`,
+  GET_BY_CLIENT_BUSINESS_UNIT: `${API_URL}/business/getByClientId`,
   //======================PRODUCTS APIS =====================
 
   GET_STATE_BY_COUNTRY_LOCATION: `${API_URL}/location/states/by-country`,

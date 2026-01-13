@@ -148,10 +148,12 @@ export function Header() {
               <UserDropdownMenu
                 trigger={
                   <img
-                    className="size-9 rounded-full border-2 border-green-500 shrink-0 cursor-pointer"
+                    className="size-9 rounded-full border border-border shrink-0 cursor-pointer object-contain"
                     src={
-                      user?.avatar?.fileName ||
-                      toAbsoluteUrl('/media/avatars/300-1.jpg')
+                      typeof user?.avatar === 'string'
+                        ? user.avatar
+                        : user?.avatar?.fileName ||
+                          toAbsoluteUrl('/media/app/mini-logo.svg')
                     }
                     alt="User Avatar"
                   />

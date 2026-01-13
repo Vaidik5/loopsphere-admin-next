@@ -8,7 +8,7 @@ interface User {
   id: string;
   email: string;
   name: string;
-  avatar?: UserImage | null;
+  avatar?: string | UserImage | null;
   role?: string;
 }
 
@@ -18,7 +18,7 @@ interface AuthState {
   isAuthenticated: boolean;
   rememberMe: boolean;
   // Actions
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<boolean>;
+  login: (payload: Record<string, any>, rememberMe?: boolean) => Promise<boolean>;
   logout: () => void;
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
@@ -29,11 +29,15 @@ interface AuthState {
 
 const mapUser = (apiUser: UserModel): User => {
   return {
-    id: apiUser._id,
+    id: apiUser.id || apiUser._id || '',
     email: apiUser.email,
     name: `${apiUser.firstName || ''} ${apiUser.lastName || ''}`.trim(),
-    avatar: apiUser.image || null,
-    role: apiUser.role,
+    avatar:
+      (apiUser.image && (apiUser.image.url || apiUser.image.fileName)) || null,
+    role:
+      typeof apiUser.role === 'string'
+        ? apiUser.role
+        : apiUser.role?.name || undefined,
   };
 };
 
@@ -45,11 +49,11 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       rememberMe: false,
 
-      login: async (email: string, password: string, rememberMe: boolean = false) => {
+      login: async (payload: Record<string, any>, rememberMe: boolean = false) => {
         set({ isLoading: true, rememberMe });
         try {
-          const auth = await authApi.login(email, password, 'device-uuid', rememberMe);
-          authHelper.setAuth(auth, rememberMe);
+          const auth = await authApi.login(payload, rememberMe);
+          authHelper.setAuth(auth, rememberMe, payload);
 
           const apiUser = await authApi.getUser();
           const user = mapUser(apiUser);

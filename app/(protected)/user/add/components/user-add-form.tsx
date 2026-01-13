@@ -71,7 +71,8 @@ const UserAddForm = () => {
       mobileNumber: '',
       isdCode: '',
       countryId: '',
-      role: '',
+      isdCodeCountryId: '',
+      roleId: '',
       status: 'active',
       clientId: '',
       businessUnitId: '',
@@ -85,17 +86,21 @@ const UserAddForm = () => {
 
   // Fetch initial data
   useEffect(() => {
+    // Always fetch clients to ensure the list is up to date
+    fetchClients();
+  }, [fetchClients]);
+
+  useEffect(() => {
     if (countries.length === 0) {
       fetchCountries();
     }
-    if (clients.length === 0) {
-      fetchClients();
-    }
+    
     if (roles.length === 0) {
       fetchRoles();
     }
     fetchCurrentAdmin();
-  }, [countries.length, clients.length, fetchCountries, fetchClients, fetchCurrentAdmin]);
+   
+  }, [countries.length, fetchCountries, fetchCurrentAdmin]);
 
   // Filter countries when search changes
   useEffect(() => {
@@ -104,6 +109,7 @@ const UserAddForm = () => {
     } else if (!countrySearch && countries.length > 0) {
       useDataStore.getState().setFilteredCountries(countries);
     }
+    
   }, [countrySearch, selectIsdOpen, countries, filterCountries]);
 
   const handleClientChange = async (selectedClientId: string) => {
@@ -118,6 +124,7 @@ const UserAddForm = () => {
     const [isdCode, countryId] = value.split('|');
     form.setValue('isdCode', isdCode);
     form.setValue('countryId', countryId);
+    form.setValue('isdCodeCountryId', countryId);
   };
 
   const onSubmit = async (data: UserAddSchemaType) => {
@@ -133,10 +140,11 @@ const UserAddForm = () => {
     formData.append('password', data.password);
     formData.append('isdCode', formattedIsdCode);
     formData.append('countryId', data.countryId);
+    formData.append('isdCodeCountryId', data.isdCodeCountryId);
     formData.append('mobileNumber', data.mobileNumber);
     formData.append('clientId', data.clientId);
     formData.append('businessUnitId', data.businessUnitId);
-    formData.append('role', data.role);
+    formData.append('roleId', data.roleId);
     formData.append('status', data.status);
 
     if (imageFiles.length > 0 && imageFiles[0]?.file) {
@@ -162,10 +170,8 @@ const UserAddForm = () => {
 
   return (
     <div className="grid gap-5 lg:gap-7.5">
-      <div className="mx-5 card p-3 border-b-2">
-        <h3 className="card-title">Add Admin User</h3>
-      </div>
-      <div className="mx-5 card card-body grid gap-y-5">
+   
+      <div className="border mt-5 grid gap-5 lg:gap-9.5 card  rounded-xl p-8">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             {/* Profile Image Upload */}
@@ -219,35 +225,32 @@ const UserAddForm = () => {
               </div>
             </div>
 
-            {/* Client */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {/* Client */}
             <FormField
               control={form.control}
               name="clientId"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="w-56">Client</FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <Select
-                        value={field.value || ''}
-                        onValueChange={handleClientChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Client" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {clients.map((client) => (
-                            <SelectItem key={client.id} value={client.id}>
-                              {client.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </div>
-                  </div>
+                  <FormLabel>Client</FormLabel>
+                  <Select
+                    value={field.value || ''}
+                    onValueChange={handleClientChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Client" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -258,30 +261,26 @@ const UserAddForm = () => {
               name="businessUnitId"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-baseline flex-wrap lg:flex-nowrap gap-2.5">
-                    <FormLabel className="w-56">Business Unit</FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <Select
-                        value={field.value || ''}
-                        onValueChange={field.onChange}
-                        disabled={!form.watch('clientId')}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Business Unit" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {businessUnits.map((unit) => (
-                            <SelectItem key={unit.id} value={unit.id}>
-                              {unit.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </div>
-                  </div>
+                  <FormLabel>Business Unit</FormLabel>
+                  <Select
+                    value={field.value || ''}
+                    onValueChange={field.onChange}
+                    disabled={!form.watch('clientId')}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Business Unit" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {businessUnits.map((unit) => (
+                        <SelectItem key={unit.id} value={unit.id}>
+                          {unit.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -292,26 +291,22 @@ const UserAddForm = () => {
               name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="w-56">
-                      First Name <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <FormControl>
-                        <Input
-                          placeholder="First Name"
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (/^[a-zA-Z\s]*$/.test(value)) {
-                              field.onChange(value);
-                            }
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </div>
-                  </div>
+                  <FormLabel>
+                    First Name <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="First Name"
+                      {...field}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^[a-zA-Z\s]*$/.test(value)) {
+                          field.onChange(value);
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -322,26 +317,22 @@ const UserAddForm = () => {
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="w-56">
-                      Last Name <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <FormControl>
-                        <Input
-                          placeholder="Last Name"
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (/^[a-zA-Z\s]*$/.test(value)) {
-                              field.onChange(value);
-                            }
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </div>
-                  </div>
+                  <FormLabel>
+                    Last Name <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Last Name"
+                      {...field}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^[a-zA-Z\s]*$/.test(value)) {
+                          field.onChange(value);
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -352,22 +343,18 @@ const UserAddForm = () => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="w-56">
-                      Email <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="Email"
-                          autoComplete="off"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </div>
-                  </div>
+                  <FormLabel>
+                    Email <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="Email"
+                      autoComplete="off"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -378,22 +365,18 @@ const UserAddForm = () => {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="w-56">
-                      Password <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Password"
-                          autoComplete="new-password"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </div>
-                  </div>
+                  <FormLabel>
+                    Password <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="Password"
+                      autoComplete="new-password"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -404,91 +387,87 @@ const UserAddForm = () => {
               name="mobileNumber"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="w-56">
-                      Mobile Number <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <div className="w-full flex gap-2">
-                        <Select
-                          value={`${form.watch('isdCode')}|${form.watch('countryId')}`}
-                          onOpenChange={(open) => {
-                            setSelectIsdOpen(open);
-                            if (!open) {
-                              setCountrySearch('');
-                              useDataStore.getState().setFilteredCountries(countries);
-                            }
-                          }}
-                          onValueChange={handleCountryChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-40">
-                              <SelectValue>
-                                {selectedCountry ? (
-                                  <div className="flex items-center gap-2">
-                                    {selectedCountry.flag && (
-                                      <img
-                                        src={selectedCountry.flag}
-                                        alt="flag"
-                                        className="w-5 h-5 object-contain rounded-sm"
-                                      />
-                                    )}
-                                    <span>(+{selectedCountry.isdCode})</span>
-                                  </div>
-                                ) : (
-                                  'ISD'
+                  <FormLabel>
+                    Mobile Number <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <div className="w-full flex gap-2">
+                    <Select
+                      value={`${form.watch('isdCode')}|${form.watch('countryId')}`}
+                      onOpenChange={(open) => {
+                        setSelectIsdOpen(open);
+                        if (!open) {
+                          setCountrySearch('');
+                          useDataStore.getState().setFilteredCountries(countries);
+                        }
+                      }}
+                      onValueChange={handleCountryChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-40">
+                          <SelectValue>
+                            {selectedCountry ? (
+                              <div className="flex items-center gap-2">
+                                {selectedCountry.flag && (
+                                  <img
+                                    src={selectedCountry.flag}
+                                    alt="flag"
+                                    className="w-5 h-5 object-contain rounded-sm"
+                                  />
                                 )}
-                              </SelectValue>
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-h-60 overflow-y-auto">
-                            <div className="p-2 sticky top-0 bg-white z-10">
-                              <Input
-                                type="text"
-                                placeholder="Search..."
-                                value={countrySearch}
-                                onChange={(e) => {
-                                  const search = e.target.value;
-                                  setCountrySearch(search);
-                                  if (search) {
-                                    filterCountries(search);
-                                  } else {
-                                    useDataStore.getState().setFilteredCountries(countries);
-                                  }
-                                }}
-                                className="w-full"
-                              />
-                            </div>
-                            {filteredCountries.map((country) => (
-                              <SelectItem
-                                key={country._id}
-                                value={`${country.isdCode}|${country._id}`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  {country.flag && (
-                                    <img
-                                      src={country.flag}
-                                      alt={country.name}
-                                      className="w-5 h-5 object-cover rounded-sm"
-                                    />
-                                  )}
-                                  <span>(+{country.isdCode})</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormControl>
+                                <span>(+{selectedCountry.isdCode})</span>
+                              </div>
+                            ) : (
+                              'ISD'
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="max-h-60 overflow-y-auto">
+                        <div className="p-2 sticky top-0 bg-white z-10">
                           <Input
                             type="text"
-                            placeholder="Enter your mobile number"
-                            {...field}
+                            placeholder="Search..."
+                            value={countrySearch}
+                            onChange={(e) => {
+                              const search = e.target.value;
+                              setCountrySearch(search);
+                              if (search) {
+                                filterCountries(search);
+                              } else {
+                                useDataStore.getState().setFilteredCountries(countries);
+                              }
+                            }}
+                            className="w-full"
                           />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </div>
+                        </div>
+                        {filteredCountries.map((country) => (
+                          <SelectItem
+                            key={country._id}
+                            value={`${country.isdCode}|${country._id}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {country.flag && (
+                                <img
+                                  src={country.flag}
+                                  alt={country.name}
+                                  className="w-5 h-5 object-cover rounded-sm"
+                                />
+                              )}
+                              <span>(+{country.isdCode})</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder="Enter your mobile number"
+                        {...field}
+                      />
+                    </FormControl>
                   </div>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -496,36 +475,29 @@ const UserAddForm = () => {
             {/* Role */}
             <FormField
               control={form.control}
-              name="role"
+              name="roleId"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="min-w-[140px] sm:w-56">
-                      Role <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <Select value={field.value || ''} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select Role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {/* <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="superadmin">Super Admin</SelectItem> */}
-
-                          {
-                            roles.map((role) => (
-                              <SelectItem key={role._id} value={role.name}>
-                                {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
-                              </SelectItem>
-                            ))
-                          }
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </div>
-                  </div>
+                  <FormLabel>
+                    Role <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select value={field.value || ''} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Role" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {
+                        roles.map((role) => (
+                          <SelectItem key={role._id} value={role._id}>
+                            {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                          </SelectItem>
+                        ))
+                      }
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -536,36 +508,47 @@ const UserAddForm = () => {
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2.5">
-                    <FormLabel className="min-w-[140px] sm:w-56">
-                      Status <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <div className="w-full flex flex-col gap-2">
-                      <Select value={field.value || ''} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select Status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="suspended">Suspended</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </div>
-                  </div>
+                  <FormLabel>
+                    Status <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select value={field.value || ''} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
+            </div>
 
-            <div className="text-end">
-              <Button
+
+
+              <div className="text-end">
+
+               <Button
+                type="button"
+                disabled={isLoading || form.formState.isSubmitting}
+                variant="outline"
+                // className="btn ms-2 bg-white-600 hover:bg-black-100 text-black shadow-md border-gray-300 border-solid border-2"
+                onClick={() => router.back()}
+              >
+               
+                  Cancel
+              
+              </Button>
+             
+    <Button
                 type="submit"
                 disabled={isLoading || form.formState.isSubmitting}
-                className="btn btn-primary"
+                className="btn btn-primary ms-2"
               >
                 {isLoading || form.formState.isSubmitting ? (
                   <div className="flex items-center gap-2">
@@ -573,13 +556,18 @@ const UserAddForm = () => {
                     <span>Submitting...</span>
                   </div>
                 ) : (
-                  'Save Changes'
+                  'Submit'
                 )}
               </Button>
+             
             </div>
+   
+     
           </form>
         </Form>
       </div>
+      
+          
     </div>
   );
 };

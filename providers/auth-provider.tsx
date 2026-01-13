@@ -16,13 +16,13 @@ interface User {
   id: string;
   email: string;
   name: string;
-  avatar?: UserImage | null;
+  avatar?: string | UserImage | null;
   role?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<boolean>;
+  login: (payload: Record<string, any>, rememberMe?: boolean) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
   // Keep these for compatibility with existing UI
@@ -34,11 +34,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const mapUser = (apiUser: UserModel): User => {
   return {
-    id: apiUser._id,
+    id: apiUser.id || apiUser._id || '',
     email: apiUser.email,
     name: `${apiUser.firstName || ''} ${apiUser.lastName || ''}`.trim(),
-    avatar: apiUser.image || null,
-    role: apiUser.role,
+    avatar:
+      (apiUser.image && (apiUser.image.url || apiUser.image.fileName)) || null,
+    role:
+      typeof apiUser.role === 'string'
+        ? apiUser.role
+        : apiUser.role?.name || undefined,
   };
 };
 
@@ -65,11 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth();
   }, []);
 
-  const login = async (email: string, password: string, rememberMe: boolean = false): Promise<boolean> => {
+  const login = async (payload: Record<string, any>, rememberMe: boolean = false): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const auth = await authApi.login(email, password, 'device-uuid', rememberMe);
-      authHelper.setAuth(auth, rememberMe);
+      const auth = await authApi.login(payload, rememberMe);
+      authHelper.setAuth(auth, rememberMe, payload);
 
       const apiUser = await authApi.getUser();
       setUser(mapUser(apiUser));

@@ -44,7 +44,8 @@ export interface AdminUser {
   mobileNumber: string;
   isdCode: string;
   countryId: string;
-  role: string;
+  role:Role | string;
+  isdCodeCountryId?: string;
   status: string | { code: string; label: string };
   clientId?: string;
   businessUnitId?: string;

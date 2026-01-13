@@ -5,18 +5,14 @@ import { apiRequest } from './api-request';
 import * as authHelper from './auth-helpers';
 
 export const login = async (
-  email: string,
-  password: string,
-  identifier: string = 'device-uuid',
+  payload: Record<string, any>,
   rememberMe: boolean = false,
 ) => {
-  const response = await axios.post<AuthModel>(API_ENDPOINTS.ADMIN_LOGIN, {
-    email,
-    password,
-    identifier,
-  });
+  const response = await axios.post<AuthModel>(API_ENDPOINTS.ADMIN_LOGIN, payload);
   // Store rememberMe flag with the auth response for later use
   (response.data as any).rememberMe = rememberMe;
+  // Also echo back the original payload for convenience (not required by API)
+  (response.data as any).loginPayload = payload;
   return response.data;
 };
 

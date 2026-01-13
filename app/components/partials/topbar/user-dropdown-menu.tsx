@@ -43,10 +43,12 @@ export function UserDropdownMenu({ trigger }: { trigger: ReactNode }) {
         <div className="flex items-center justify-between p-3">
           <div className="flex items-center gap-2">
             <img
-              className="w-9 h-9 rounded-full border border-border"
+              className="w-9 h-9 rounded-full border border-border object-contain"
               src={
-                user?.avatar?.fileName ||
-                toAbsoluteUrl('/media/avatars/300-1.jpg')
+                typeof user?.avatar === 'string'
+                  ? user.avatar
+                  : user?.avatar?.fileName ||
+                    toAbsoluteUrl('/media/app/mini-logo.svg')
               }
               alt="User avatar"
             />

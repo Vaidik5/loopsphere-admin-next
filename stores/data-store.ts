@@ -149,9 +149,10 @@ export const useDataStore = create<DataState>()(
           set({ clientsLoading: true, clientsError: null });
           try {
             const response = await apiRequest<any>('GET', API_ENDPOINTS.PANAROMA_CLIENT_LIST);
+          console.log('Fetched Clients Response:', response);
             if (response?.data?.data) {
               const clientList = response.data.data.map((item: any) => ({
-                id: item._id,
+                id: item._id || item.id,
                 name: `${item.firstName || ''} ${item.lastName || ''}`.trim() || item.companyName || 'Client',
               }));
               set({ clients: clientList, clientsLoading: false });
@@ -178,10 +179,10 @@ export const useDataStore = create<DataState>()(
           }
 
           // Check cache first
-          const cached = get().businessUnitsCache[clientId];
-          if (cached && cached.length > 0) {
-            return;
-          }
+          // const cached = get().businessUnitsCache[clientId];
+          // if (cached && cached.length > 0) {
+          //   return;
+          // }
 
           set({ businessUnitsLoading: true, businessUnitsError: null });
           try {
@@ -191,7 +192,7 @@ export const useDataStore = create<DataState>()(
             );
             if (response?.data?.data) {
               const buList = response.data.data.map((item: any) => ({
-                id: item._id,
+                id: item._id || item.id,
                 name: item.name,
               }));
               set((state) => ({

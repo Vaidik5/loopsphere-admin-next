@@ -19,6 +19,11 @@ export const MENU_SIDEBAR: MenuConfig = [
     path: '/users',
     icon: ShieldUser,
   },
+  {
+    title: 'Categories',
+    path: '/categories',
+    icon: DocumentIcon,
+  }
 ];
 
 export const MENU_SIDEBAR_CUSTOM: MenuConfig = [
